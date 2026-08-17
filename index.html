@@ -2,419 +2,453 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Hausrat-Inventar</title>
+<meta name="theme-color" content="#1D62C9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hausrat">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:15px}
-.app{max-width:600px;margin:0 auto;padding:16px}
-/* Header */
-.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px}
-.hdr-left h1{font-size:18px;font-weight:600}
-.hdr-left .hdr-sub{font-size:12px;color:#888;cursor:pointer;text-decoration:underline dotted;margin-top:2px}
-.hdr-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
-/* Stats */
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.stat{background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:11px 12px}
-.stat-label{font-size:11px;color:#888;margin-bottom:2px}
-.stat-value{font-size:17px;font-weight:600}
-.stat-sub{font-size:11px;color:#aaa;margin-top:2px}
-.stat-wide{grid-column:1/-1}
-/* Kunden-Info-Banner */
-.kunden-banner{background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:11px 14px;margin-bottom:14px;cursor:pointer;display:none}
-.kunden-banner:active{background:#fafaf8}
-.kunden-banner-title{font-size:11px;color:#888;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
-.kunden-banner-row{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
-.kunden-banner-item{font-size:13px;color:#1a1a1a}
-.kunden-banner-label{font-size:11px;color:#aaa}
-/* FAB */
-.fab{position:sticky;bottom:20px;float:right;width:60px;height:60px;border-radius:50%;background:#185FA5;color:#fff;border:none;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;margin-bottom:8px;box-shadow:0 3px 10px rgba(0,0,0,0.2)}
-.fab:active{transform:scale(0.94)}
-/* Toolbar */
-.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.btn{padding:9px 14px;border:0.5px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;font-family:inherit;white-space:nowrap}
-.btn:active{background:#eee}
-.btn-sm{padding:6px 10px;font-size:12px}
-.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
-.btn-primary:active{background:#0C447C}
-.btn-success{background:#3B6D11;color:#fff;border-color:#3B6D11}
-.btn-danger{color:#E24B4A;border-color:#E24B4A}
-/* Karten */
-.cat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin:16px 0 6px}
-.card{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;margin-bottom:10px;overflow:hidden;cursor:pointer}
-.card:active{background:#fafaf8}
-.card-main{display:flex;align-items:flex-start;gap:10px;padding:12px}
-.card-photo{width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0;border:0.5px solid #e0e0d8}
-.card-photo-empty{width:72px;height:72px;border-radius:8px;flex-shrink:0;border:1.5px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:26px;background:#fafafa}
-.card-info{flex:1;min-width:0}
-.card-name{font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card-meta{font-size:12px;color:#888;margin-top:2px}
-.card-price{text-align:right;flex-shrink:0;min-width:80px}
-.card-neuwert{font-weight:600;font-size:15px;color:#185FA5}
-.card-zeitwert{font-size:11px;color:#854F0B;margin-top:2px}
-.card-neuwert-label{font-size:11px;color:#aaa}
-.card-footer{border-top:0.5px solid #f0f0ee;padding:7px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.badge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
-.badge-ai{background:#EEEDFE;color:#534AB7}
-.badge-img{background:#E1F5EE;color:#0F6E56}
-.badge-receipt{background:#E6F1FB;color:#185FA5}
-.badge-manual{background:#EAF3DE;color:#3B6D11}
-.badge-missing{background:#FAEEDA;color:#854F0B}
-.source-btn{font-size:11px;color:#185FA5;text-decoration:none;padding:3px 8px;border:0.5px solid #B5D4F4;border-radius:6px;background:#E6F1FB;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
-.card-actions{margin-left:auto;display:flex;gap:2px}
-.icon-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;font-size:15px;color:#aaa}
-.icon-btn:active{background:#f0f0ee}
-/* Modals */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 36px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto}
-.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
-.modal h2{font-size:17px;font-weight:600;margin-bottom:4px}
-.modal-sub{font-size:12px;color:#888;margin-bottom:14px}
-/* Status-Banner */
-.status-banner{border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px;display:flex;align-items:center;gap:10px;min-height:46px}
-.status-banner.scanning{background:#EEEDFE;color:#534AB7}
-.status-banner.ok{background:#E1F5EE;color:#0F6E56}
-.status-banner.warn{background:#FAEEDA;color:#854F0B}
-.status-banner.idle{background:#f5f5f3;color:#888}
-.status-icon{font-size:20px;flex-shrink:0;display:flex;align-items:center}
-.status-text{flex:1;line-height:1.4}
-.status-text strong{display:block;font-weight:500}
-.status-text small{font-size:11px;opacity:0.8}
-/* Tabs */
-.input-tabs{display:flex;gap:0;margin-bottom:12px;border:0.5px solid #e0e0d8;border-radius:10px;overflow:hidden;background:#f5f5f3}
-.input-tab{flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;color:#888;border:none;background:none;font-family:inherit}
-.input-tab.active{background:#fff;color:#1a1a1a;font-weight:500}
-.input-panel{display:none}
-.input-panel.active{display:block}
-/* Foto */
-.photo-strip{display:flex;gap:8px;margin-bottom:12px;align-items:center}
-.photo-box{width:80px;height:80px;border-radius:10px;object-fit:cover;border:0.5px solid #e0e0d8;flex-shrink:0;cursor:pointer}
-.photo-box-empty{width:80px;height:80px;border-radius:10px;border:1.5px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#bbb;font-size:24px;background:#fafafa;flex-shrink:0;gap:2px}
-.photo-box-empty span{font-size:10px;color:#ccc}
-.photo-box-empty:active{border-color:#378ADD;background:#f0f4ff}
-.photo-actions{display:flex;flex-direction:column;gap:6px;flex:1}
-/* Rechnung */
-.receipt-area{border:1.5px dashed #B5D4F4;border-radius:10px;padding:14px;background:#E6F1FB;text-align:center;cursor:pointer;color:#185FA5;font-size:13px}
-.receipt-area:active{background:#B5D4F4}
-.receipt-icon{font-size:28px;margin-bottom:4px}
-.receipt-thumb{max-width:100%;max-height:100px;border-radius:6px;margin-top:8px;object-fit:contain}
-/* Felder */
-.form-row{margin-bottom:11px}
-.form-label{font-size:12px;color:#666;margin-bottom:4px;display:flex;align-items:center;gap:6px;font-weight:500;flex-wrap:wrap}
-.auto-badge{font-size:10px;background:#E1F5EE;color:#0F6E56;padding:1px 6px;border-radius:99px}
-.receipt-badge{font-size:10px;background:#E6F1FB;color:#185FA5;padding:1px 6px;border-radius:99px}
-.manual-badge{font-size:10px;background:#f0f0ee;color:#666;padding:1px 6px;border-radius:99px}
-.form-input{width:100%;padding:11px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:15px;font-family:inherit;background:#fff}
-.form-input:focus{outline:none;border-color:#378ADD}
-.form-input.auto-filled{border-color:#1D9E75;background:#f0fef8}
-.form-input.receipt-filled{border-color:#185FA5;background:#f0f5ff}
-.form-input.manual-locked{border-color:#888;background:#fafafa}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
-/* Neuwert-Ergebnis */
-.neuwert-result{background:#EEEDFE;border-radius:8px;padding:10px 12px;margin-top:6px}
-.neuwert-result-price{font-size:20px;font-weight:600;color:#534AB7}
-.neuwert-result-source{font-size:11px;color:#666;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.neuwert-result-note{font-size:11px;color:#777;margin-top:3px}
-.zeitwert-info{background:#FAEEDA;border-radius:8px;padding:8px 12px;margin-top:6px;font-size:12px;color:#633806}
-/* Abschnitt-Trenner */
-.section-divider{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 10px;padding-bottom:6px;border-bottom:0.5px solid #e0e0d8}
-/* Spinner */
-.spinner{width:16px;height:16px;border:2px solid rgba(83,74,183,0.2);border-top-color:#534AB7;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
-.spinner-lg{width:20px;height:20px;border-width:2.5px}
+html,body{height:100%}
+:root{
+  --bg:#F5F5F3;--surface:#FFFFFF;--surface-2:#FAFAF8;--border:#E3E3DC;
+  --text:#15181C;--text-2:#6B7178;--text-3:#9DA1A8;
+  --accent:#1D62C9;--accent-2:#E8F0FC;--accent-dark:#124A9E;
+  --success:#1C9C6E;--success-bg:#E4F7EF;
+  --warn:#B5740A;--warn-bg:#FCF0DA;
+  --danger:#D64545;--danger-bg:#FCEAEA;
+  --radius-s:10px;--radius-m:16px;--radius-l:22px;
+  --shadow:0 2px 10px rgba(20,23,26,.06);
+  --shadow-lg:0 10px 32px rgba(20,23,26,.16);
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#111214;--surface:#1B1D20;--surface-2:#202226;--border:#2C2F33;
+    --text:#F2F3F4;--text-2:#9DA3AA;--text-3:#6B7178;
+    --accent:#5B97F5;--accent-2:#1B2A40;--accent-dark:#8BB6FA;
+    --success:#33C48A;--success-bg:#123326;
+    --warn:#E3A73B;--warn-bg:#3A2C0F;
+    --danger:#F27171;--danger-bg:#3A1717;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit;color:inherit}
+.hidden{display:none!important}
+/* ── Splash ── */
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:999}
+#splash .logo{font-size:44px}
+#splash .spin{width:22px;height:22px;border:3px solid var(--accent-2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* Kategorie-Liste */
-.cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.cat-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border:0.5px solid #e0e0d8;border-radius:8px}
-.cat-item-name{flex:1;font-size:14px}
-.cat-item-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px 6px}
-.cat-item-del:active{color:#E24B4A}
-.cat-add-row{display:flex;gap:8px}
-.empty{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:48px 24px;text-align:center;color:#aaa}
-.empty-icon{font-size:40px;margin-bottom:10px}
+/* ── Auth ── */
+#view-auth{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + var(--safe-t))}
+.auth-card{width:100%;max-width:380px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-l);padding:28px 22px;box-shadow:var(--shadow)}
+.auth-logo{text-align:center;font-size:36px;margin-bottom:2px}
+.auth-title{text-align:center;font-size:19px;font-weight:700;margin-bottom:4px}
+.auth-sub{text-align:center;font-size:13px;color:var(--text-2);margin-bottom:20px}
+.auth-tabs{display:flex;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-s);overflow:hidden;margin-bottom:18px}
+.auth-tab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:500;color:var(--text-2);background:none;border:none;cursor:pointer}
+.auth-tab.active{background:var(--surface);color:var(--text)}
+.auth-error{background:var(--danger-bg);color:var(--danger);font-size:12.5px;padding:9px 12px;border-radius:var(--radius-s);margin-bottom:12px;display:none;line-height:1.4}
+.auth-note{background:var(--accent-2);color:var(--accent-dark);font-size:12.5px;padding:9px 12px;border-radius:var(--radius-s);margin-bottom:12px;line-height:1.5}
+.auth-forgot{display:block;text-align:right;font-size:12px;color:var(--accent);margin:-6px 0 14px;cursor:pointer;background:none;border:none;padding:0}
+/* ── Layout ── */
+#view-main{min-height:100%;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:40;background:var(--bg);padding:calc(12px + var(--safe-t)) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.topbar h1{font-size:18px;font-weight:700;display:flex;align-items:center;gap:6px}
+.net-pill{font-size:11px;padding:3px 9px;border-radius:99px;display:flex;align-items:center;gap:5px;font-weight:500}
+.net-pill.online{background:var(--success-bg);color:var(--success)}
+.net-pill.offline{background:var(--warn-bg);color:var(--warn)}
+.net-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.content{flex:1;padding:0 16px;max-width:640px;margin:0 auto;width:100%;padding-bottom:110px}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadein .15s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* ── Bottom nav ── */
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;background:var(--surface);border-top:0.5px solid var(--border);display:flex;padding-bottom:var(--safe-b)}
+.nav-btn{flex:1;background:none;border:none;padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-3);cursor:pointer}
+.nav-btn .ic{font-size:20px;line-height:1}
+.nav-btn span{font-size:10.5px;font-weight:500}
+.nav-btn.active{color:var(--accent)}
+.fab{position:fixed;right:16px;bottom:calc(74px + var(--safe-b));width:58px;height:58px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:46;box-shadow:var(--shadow-lg)}
+.fab:active{transform:scale(.94)}
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.stat{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:12px 13px}
+.stat-label{font-size:11px;color:var(--text-2);margin-bottom:3px}
+.stat-value{font-size:18px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+.stat-wide{grid-column:1/-1}
+/* ── Toolbar / section header ── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px}
+.section-head h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2)}
+.search-row{margin-bottom:10px}
+.search-row input{width:100%}
+/* ── Buttons ── */
+.btn{padding:10px 15px;border:0.5px solid var(--border);border-radius:var(--radius-s);background:var(--surface);cursor:pointer;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap;color:var(--text)}
+.btn:active{background:var(--bg)}
+.btn-sm{padding:7px 11px;font-size:12.5px}
+.btn-block{width:100%;justify-content:center}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:active{background:var(--accent-dark)}
+.btn-danger{color:var(--danger);border-color:var(--danger)}
+.btn-ghost{border-color:transparent;background:none}
+/* ── Cards ── */
+.cat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);margin:16px 0 7px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);margin-bottom:10px;overflow:hidden}
+.card-main{display:flex;align-items:flex-start;gap:10px;padding:12px;cursor:pointer}
+.card-photo{width:68px;height:68px;border-radius:10px;object-fit:cover;flex-shrink:0;border:0.5px solid var(--border);background:var(--surface-2)}
+.card-photo-empty{width:68px;height:68px;border-radius:10px;flex-shrink:0;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--surface-2)}
+.card-info{flex:1;min-width:0}
+.card-name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{font-size:12px;color:var(--text-2);margin-top:2px}
+.card-price{text-align:right;flex-shrink:0;min-width:78px}
+.card-neuwert{font-weight:700;font-size:14.5px;color:var(--accent)}
+.card-zeitwert{font-size:11px;color:var(--warn);margin-top:2px}
+.card-footer{border-top:0.5px solid var(--border);padding:7px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600}
+.badge-ok{background:var(--success-bg);color:var(--success)}
+.badge-missing{background:var(--warn-bg);color:var(--warn)}
+.badge-archived{background:var(--surface-2);color:var(--text-3)}
+.card-actions{margin-left:auto;display:flex;gap:2px}
+.icon-btn{background:none;border:none;cursor:pointer;padding:5px 8px;border-radius:8px;font-size:15px;color:var(--text-3)}
+.icon-btn:active{background:var(--bg)}
+.pending-tag{font-size:10px;color:var(--warn);display:flex;align-items:center;gap:4px}
+.empty{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-l);padding:44px 22px;text-align:center;color:var(--text-3)}
+.empty-icon{font-size:38px;margin-bottom:10px}
+/* ── Forms ── */
+.form-row{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text-2);margin-bottom:5px;display:block;font-weight:600}
+.form-input{width:100%;padding:11px 12px;border:0.5px solid var(--border);border-radius:var(--radius-s);font-size:15px;font-family:inherit;background:var(--surface);color:var(--text)}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239DA1A8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 input[type=file]{display:none}
+/* ── Photo/Beleg picker ── */
+.pic-row{display:flex;gap:10px;align-items:center;margin-bottom:4px}
+.pic-box{width:78px;height:78px;border-radius:12px;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0;cursor:pointer}
+.pic-box-empty{width:78px;height:78px;border-radius:12px;border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--text-3);font-size:22px;background:var(--surface-2);flex-shrink:0;gap:2px}
+.pic-box-empty span{font-size:10px}
+.pic-actions{display:flex;flex-direction:column;gap:6px;flex:1}
+.receipt-chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-2);color:var(--accent-dark);padding:6px 11px;border-radius:99px;font-size:12.5px;cursor:pointer;border:none}
+/* ── Zeitwert info ── */
+.zeitwert-info{background:var(--warn-bg);border-radius:var(--radius-s);padding:9px 12px;margin-top:6px;font-size:12px;color:var(--warn);line-height:1.5}
+.price-search-row{display:flex;gap:8px;margin-top:2px}
+/* ── Modal / bottom sheet ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,17,20,.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:18px 18px calc(28px + var(--safe-b));width:100%;max-width:640px;max-height:92vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:3px}
+.modal-sub{font-size:12.5px;color:var(--text-2);margin-bottom:16px}
+.section-divider{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+/* ── Category manager ── */
+.cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.cat-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-s)}
+.cat-item-name{flex:1;font-size:13.5px}
+.cat-item-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:2px 6px}
+.cat-add-row{display:flex;gap:8px}
+/* ── More tab / account ── */
+.more-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:14px;margin-bottom:12px}
+.more-card .label{font-size:11px;color:var(--text-2);margin-bottom:3px}
+.more-card .value{font-size:14px;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(88px + var(--safe-b));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:13px;z-index:300;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="hdr">
-    <div class="hdr-left">
-      <h1>🏠 Hausrat-Inventar</h1>
-      <div class="hdr-sub" id="hdr-owner" onclick="openKunden()">Kundendaten eingeben</div>
-    </div>
-    <div class="hdr-actions">
-      <button class="btn btn-sm" onclick="openKunden()" title="Kundendaten">👤</button>
-      <button class="btn btn-sm" onclick="openCatManager()" title="Kategorien">🏷</button>
-      <button class="btn btn-sm" onclick="exportXLSX()">⬇ Excel</button>
-    </div>
-  </div>
 
-  <!-- Versicherungs-Banner -->
-  <div class="kunden-banner" id="kunden-banner" onclick="openKunden()">
-    <div class="kunden-banner-title">
-      <span>Versicherungsdaten</span>
-      <span style="font-size:11px;color:#185FA5">✏️ bearbeiten</span>
-    </div>
-    <div class="kunden-banner-row" id="kunden-banner-row"></div>
-  </div>
+<div id="splash"><div class="logo">🏠</div><div class="spin"></div></div>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-label">Gesamtneuwert</div>
-      <div class="stat-value" id="s-neuwert">0 €</div>
-      <div class="stat-sub">Wiederbeschaffungswert</div>
+<!-- ══════ AUTH ══════ -->
+<div id="view-auth" class="hidden">
+  <div class="auth-card">
+    <div class="auth-logo">🏠</div>
+    <div class="auth-title">Hausrat-Inventar</div>
+    <div class="auth-sub">Digitalisiere deinen Hausrat für die Versicherung</div>
+    <div id="auth-setup-note" class="auth-note hidden">Firebase ist noch nicht verbunden. Bitte Konfiguration ergänzen.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login" type="button">Anmelden</button>
+      <button class="auth-tab" id="auth-tab-register" type="button">Registrieren</button>
     </div>
-    <div class="stat">
-      <div class="stat-label">Positionen</div>
-      <div class="stat-value" id="s-items">0</div>
-      <div class="stat-sub" id="s-photos">0 mit Foto</div>
-    </div>
-    <div class="stat stat-wide">
-      <div class="stat-label">Empfohlene Versicherungssumme</div>
-      <div class="stat-value" id="s-empf">0 €</div>
-      <div class="stat-sub">Neuwert + 20 % Sicherheitspuffer</div>
-    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <form id="auth-form">
+      <div class="form-row">
+        <label class="form-label">E-Mail</label>
+        <input class="form-input" type="email" id="auth-email" autocomplete="email" required>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Passwort</label>
+        <input class="form-input" type="password" id="auth-password" autocomplete="current-password" required minlength="6">
+      </div>
+      <button type="button" class="auth-forgot" id="auth-forgot-btn">Passwort vergessen?</button>
+      <button type="submit" class="btn btn-primary btn-block" id="auth-submit">Anmelden</button>
+    </form>
   </div>
-
-  <div class="toolbar">
-    <button class="btn btn-sm" onclick="estimateAll()">✦ Alle fehlenden schätzen</button>
-    <button class="btn btn-sm btn-danger" onclick="clearAll()">✕ Leeren</button>
-  </div>
-
-  <div id="list"></div>
-  <div style="height:80px"></div>
-  <button class="fab" onclick="startAdd()">＋</button>
 </div>
 
-<!-- HAUPT-MODAL: Gegenstand -->
-<div class="modal-bg" id="modal-main">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2 id="modal-title">Neuer Gegenstand</h2>
-    <div class="modal-sub" id="modal-sub">Fotografiere oder lade eine Rechnung hoch — alles wird automatisch erkannt.</div>
+<!-- ══════ MAIN APP ══════ -->
+<div id="view-main" class="hidden">
+  <div class="topbar">
+    <h1>🏠 Hausrat-Inventar</h1>
+    <div class="net-pill online" id="net-pill"><span class="net-dot"></span><span id="net-text">Online</span></div>
+  </div>
 
-    <div class="status-banner idle" id="status-banner">
-      <div class="status-icon">📷</div>
-      <div class="status-text">
-        <strong id="status-title">Warte auf Eingabe</strong>
-        <small id="status-detail">Foto aufnehmen, Rechnung hochladen oder Text eingeben</small>
-      </div>
-    </div>
-
-    <div class="input-tabs">
-      <button class="input-tab active" onclick="switchTab('foto')" id="tab-foto">📷 Foto</button>
-      <button class="input-tab" onclick="switchTab('rechnung')" id="tab-rechnung">🧾 Rechnung</button>
-    </div>
-
-    <div class="input-panel active" id="panel-foto">
-      <div class="photo-strip">
-        <div id="photo-thumb-wrap">
-          <div class="photo-box-empty" onclick="triggerFile('inp-cam')">
-            <span>📷</span><span>Foto</span>
-          </div>
+  <main class="content">
+    <!-- TAB: INVENTAR -->
+    <section class="tab-panel active" id="tab-inventar">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Gesamtneuwert</div>
+          <div class="stat-value" id="s-neuwert">0 €</div>
+          <div class="stat-sub">Wiederbeschaffungswert</div>
         </div>
-        <div class="photo-actions">
-          <button class="btn btn-primary" onclick="triggerFile('inp-cam')" type="button">📷 Kamera öffnen</button>
-          <button class="btn btn-sm" onclick="triggerFile('inp-gal')" type="button">🖼 Galerie wählen</button>
+        <div class="stat">
+          <div class="stat-label">Positionen</div>
+          <div class="stat-value" id="s-items">0</div>
+          <div class="stat-sub" id="s-photos">0 mit Foto</div>
+        </div>
+        <div class="stat stat-wide">
+          <div class="stat-label">Empfohlene Versicherungssumme</div>
+          <div class="stat-value" id="s-empf">0 €</div>
+          <div class="stat-sub">Neuwert + 20 % Sicherheitspuffer</div>
         </div>
       </div>
-    </div>
+      <div id="inventar-list"></div>
+    </section>
 
-    <div class="input-panel" id="panel-rechnung">
-      <div class="receipt-area" onclick="triggerFile('inp-receipt')" id="receipt-drop">
-        <div class="receipt-icon">🧾</div>
-        <div><strong>Rechnung hochladen</strong></div>
-        <div style="font-size:12px;margin-top:3px;color:#378ADD">PDF oder Foto antippen</div>
-        <div id="receipt-preview"></div>
-      </div>
-      <input type="file" id="inp-receipt" accept="image/*,application/pdf" onchange="onReceiptSelected(event)">
-    </div>
+    <!-- TAB: ARCHIV -->
+    <section class="tab-panel" id="tab-archiv">
+      <div class="section-head"><h2>Archivierte Gegenstände</h2></div>
+      <div id="archiv-list"></div>
+    </section>
 
-    <input type="file" id="inp-cam" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
-    <input type="file" id="inp-gal" accept="image/*" onchange="onPhotoSelected(event)">
-
-    <div style="margin-top:12px">
+    <!-- TAB: KUNDE -->
+    <section class="tab-panel" id="tab-kunde">
+      <div class="section-divider" style="margin-top:14px">Persönliche Daten</div>
       <div class="form-row">
-        <label class="form-label">
-          Bezeichnung
-          <span class="auto-badge" id="badge-name" style="display:none">Auto</span>
-          <span class="receipt-badge" id="rbadge-name" style="display:none">Rechnung</span>
-          <span class="manual-badge" id="mbadge-name" style="display:none">Manuell — KI überschreibt nicht</span>
-        </label>
-        <input class="form-input" type="text" id="f-name" placeholder="Wird automatisch erkannt…" oninput="onManualInput('f-name')">
+        <label class="form-label">Name</label>
+        <input class="form-input" type="text" id="k-name" placeholder="Max Mustermann">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Adresse</label>
+        <input class="form-input" type="text" id="k-adresse" placeholder="Musterstraße 1, 12345 Musterstadt">
       </div>
       <div class="form-grid">
         <div class="form-row">
-          <label class="form-label">
-            Kategorie
-            <span class="auto-badge" id="badge-cat" style="display:none">Auto</span>
-          </label>
-          <select class="form-input" id="f-cat" onchange="onManualInput('f-cat')"></select>
+          <label class="form-label">Telefon</label>
+          <input class="form-input" type="tel" id="k-telefon" placeholder="+49 ...">
         </div>
         <div class="form-row">
-          <label class="form-label">
-            Kaufjahr
-            <span class="auto-badge" id="badge-year" style="display:none">Auto</span>
-            <span class="receipt-badge" id="rbadge-year" style="display:none">Rechnung</span>
-            <span class="manual-badge" id="mbadge-year" style="display:none">Manuell</span>
-          </label>
-          <input class="form-input" type="number" id="f-year" placeholder="z. B. 2021" min="1970" max="2030" oninput="onManualInput('f-year')">
+          <label class="form-label">E-Mail</label>
+          <input class="form-input" type="email" id="k-email" placeholder="name@beispiel.de">
+        </div>
+      </div>
+
+      <div class="section-divider">Versicherung</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Versicherungsgesellschaft</label>
+          <input class="form-input" type="text" id="k-gesellschaft" placeholder="z. B. Allianz">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Ansprechpartner</label>
+          <input class="form-input" type="text" id="k-ansprechpartner" placeholder="Vor- und Nachname">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Versicherungsnummer</label>
+          <input class="form-input" type="text" id="k-vsnr" placeholder="z. B. HH-123456789">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Vertragsnummer</label>
+          <input class="form-input" type="text" id="k-vertragsnr" placeholder="z. B. VTR-987654">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Vertragsbeginn</label>
+          <input class="form-input" type="text" id="k-beginn" placeholder="TT.MM.JJJJ">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Vertragsende / Laufzeit</label>
+          <input class="form-input" type="text" id="k-ende" placeholder="TT.MM.JJJJ oder unbefristet">
+        </div>
+      </div>
+
+      <div class="section-divider">Beitrag &amp; Deckung</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Zahlweise</label>
+          <select class="form-input" id="k-zahlweise">
+            <option value="">— wählen —</option>
+            <option>Monatlich</option>
+            <option>Vierteljährlich</option>
+            <option>Halbjährlich</option>
+            <option>Jährlich</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Beitrag (€)</label>
+          <input class="form-input" type="number" id="k-beitrag" placeholder="z. B. 12,50" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Vereinbarte Versicherungssumme (€)</label>
+          <input class="form-input" type="number" id="k-vssumme" placeholder="z. B. 80000" min="0">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Selbstbeteiligung (€)</label>
+          <input class="form-input" type="number" id="k-sb" placeholder="z. B. 150" min="0">
         </div>
       </div>
       <div class="form-row">
-        <label class="form-label">
-          Modell / Seriennr.
-          <span class="auto-badge" id="badge-serial" style="display:none">Auto</span>
-          <span class="receipt-badge" id="rbadge-serial" style="display:none">Rechnung</span>
-          <span class="manual-badge" id="mbadge-serial" style="display:none">Manuell</span>
-        </label>
-        <input class="form-input" type="text" id="f-serial" placeholder="Wird automatisch erkannt…" oninput="onManualInput('f-serial')">
+        <label class="form-label">Eingeschlossene Zusatzleistungen</label>
+        <input class="form-input" type="text" id="k-zusatz" placeholder="z. B. Elementarschäden, Fahrraddiebstahl">
       </div>
       <div class="form-row">
-        <label class="form-label">
-          Neuwert (€)
-          <span class="auto-badge" id="badge-neuwert" style="display:none">KI-Suche</span>
-          <span class="receipt-badge" id="rbadge-neuwert" style="display:none">Rechnung</span>
-          <span class="manual-badge" id="mbadge-neuwert" style="display:none">Manuell</span>
-        </label>
-        <div style="display:flex;gap:8px">
-          <input class="form-input" type="number" id="f-neuwert" placeholder="€ — wird automatisch gesucht" min="0" style="flex:1" oninput="onManualInput('f-neuwert')">
-          <button class="btn btn-sm" onclick="triggerSearch()" type="button" id="retry-btn" style="white-space:nowrap;flex-shrink:0;display:none">↺ Suchen</button>
+        <label class="form-label">Notizen</label>
+        <textarea class="form-input" id="k-notizen" rows="2" placeholder="Weitere Infos…" style="resize:vertical"></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" id="k-save-btn">Speichern ✓</button>
+    </section>
+
+    <!-- TAB: MEHR -->
+    <section class="tab-panel" id="tab-mehr">
+      <div class="section-head"><h2>Konto</h2></div>
+      <div class="more-card">
+        <div class="label">Angemeldet als</div>
+        <div class="value" id="more-email">—</div>
+      </div>
+      <button class="btn btn-block" id="more-pw-reset-btn" style="margin-bottom:8px">🔑 Passwort ändern (Reset-Mail senden)</button>
+      <button class="btn btn-danger btn-block" id="more-logout-btn">Abmelden</button>
+
+      <div class="section-head"><h2>Export</h2></div>
+      <button class="btn btn-primary btn-block" id="export-btn">⬇ Als Excel exportieren</button>
+
+      <div class="section-head"><h2>Kategorien</h2></div>
+      <div class="cat-list" id="cat-list"></div>
+      <div class="cat-add-row">
+        <input class="form-input" type="text" id="new-cat-inp" placeholder="Neue Kategorie…" style="flex:1">
+        <button class="btn btn-primary" id="cat-add-btn">＋</button>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab-add">＋</button>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="inventar"><span class="ic">🏠</span><span>Inventar</span></button>
+    <button class="nav-btn" data-tab="archiv"><span class="ic">🗄</span><span>Archiv</span></button>
+    <button class="nav-btn" data-tab="kunde"><span class="ic">👤</span><span>Kunde</span></button>
+    <button class="nav-btn" data-tab="mehr"><span class="ic">⚙️</span><span>Mehr</span></button>
+  </nav>
+</div>
+
+<!-- ══════ ITEM MODAL ══════ -->
+<div class="modal-bg" id="modal-item">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="item-modal-title">Neuer Gegenstand</h2>
+    <div class="modal-sub">Fotografiere den Gegenstand und trage die Daten ein.</div>
+
+    <div class="pic-row">
+      <div id="photo-thumb-wrap">
+        <div class="pic-box-empty" id="photo-pick-btn"><span>📷</span><span>Foto</span></div>
+      </div>
+      <div class="pic-actions">
+        <button class="btn btn-primary" id="cam-btn" type="button">📷 Kamera öffnen</button>
+        <button class="btn btn-sm" id="gal-btn" type="button">🖼 Galerie wählen</button>
+      </div>
+    </div>
+    <input type="file" id="inp-cam" accept="image/*" capture="environment">
+    <input type="file" id="inp-gal" accept="image/*">
+    <div style="margin:10px 0 4px" id="receipt-chip-wrap">
+      <button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>
+    </div>
+    <input type="file" id="inp-receipt" accept="image/*">
+
+    <div style="margin-top:14px">
+      <div class="form-row">
+        <label class="form-label">Bezeichnung *</label>
+        <input class="form-input" type="text" id="f-name" placeholder="z. B. Sofa, Fernseher, Fahrrad…">
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Kategorie</label>
+          <select class="form-input" id="f-cat"></select>
         </div>
-        <div id="neuwert-result-block"></div>
+        <div class="form-row">
+          <label class="form-label">Kaufjahr</label>
+          <input class="form-input" type="number" id="f-year" placeholder="z. B. 2021" min="1970" max="2030">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Modell / Seriennr.</label>
+        <input class="form-input" type="text" id="f-serial" placeholder="optional">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Neuwert (€)</label>
+        <input class="form-input" type="number" id="f-neuwert" placeholder="€" min="0">
+        <div class="price-search-row">
+          <button class="btn btn-sm" id="price-search-btn" type="button">🔍 Preis suchen (Google Shopping)</button>
+        </div>
         <div id="zeitwert-block"></div>
       </div>
+      <div class="form-row">
+        <label class="form-label">Notiz</label>
+        <textarea class="form-input" id="f-note" rows="2" placeholder="z. B. Zustand, Besonderheiten…" style="resize:vertical"></textarea>
+      </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn" onclick="closeMain()" style="flex:1">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveItem()" style="flex:2">Speichern ✓</button>
+      <button class="btn" id="item-cancel-btn" style="flex:1">Abbrechen</button>
+      <button class="btn btn-primary" id="item-save-btn" style="flex:2">Speichern ✓</button>
     </div>
   </div>
 </div>
 
-<!-- KUNDENDATEN-MODAL -->
-<div class="modal-bg" id="modal-kunden">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>Kundendaten &amp; Versicherung</h2>
-    <div class="modal-sub">Wird im Excel-Export auf einem eigenen Blatt ausgegeben.</div>
+<div class="toast" id="toast"></div>
 
-    <div class="section-divider">Persönliche Daten</div>
-    <div class="form-row">
-      <label class="form-label">Name</label>
-      <input class="form-input" type="text" id="k-name" placeholder="Max Mustermann">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Adresse</label>
-      <input class="form-input" type="text" id="k-adresse" placeholder="Musterstraße 1, 12345 Musterstadt">
-    </div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Telefon</label>
-        <input class="form-input" type="tel" id="k-telefon" placeholder="+49 ...">
-      </div>
-      <div class="form-row">
-        <label class="form-label">E-Mail</label>
-        <input class="form-input" type="email" id="k-email" placeholder="name@beispiel.de">
-      </div>
-    </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, addDoc, updateDoc, setDoc, onSnapshot,
+  query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <div class="section-divider">Versicherung</div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Versicherungsgesellschaft</label>
-        <input class="form-input" type="text" id="k-gesellschaft" placeholder="z. B. Allianz">
-      </div>
-      <div class="form-row">
-        <label class="form-label">Ansprechpartner</label>
-        <input class="form-input" type="text" id="k-ansprechpartner" placeholder="Vor- und Nachname">
-      </div>
-    </div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Versicherungsnummer</label>
-        <input class="form-input" type="text" id="k-vsnr" placeholder="z. B. HH-123456789">
-      </div>
-      <div class="form-row">
-        <label class="form-label">Vertragsnummer</label>
-        <input class="form-input" type="text" id="k-vertragsnr" placeholder="z. B. VTR-987654">
-      </div>
-    </div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Vertragsbeginn</label>
-        <input class="form-input" type="text" id="k-beginn" placeholder="TT.MM.JJJJ">
-      </div>
-      <div class="form-row">
-        <label class="form-label">Vertragsende / Laufzeit</label>
-        <input class="form-input" type="text" id="k-ende" placeholder="TT.MM.JJJJ oder unbefristet">
-      </div>
-    </div>
+// ══════ Firebase-Konfiguration ══════
+// Wird ersetzt, sobald die echte Konfiguration aus der Firebase-Konsole vorliegt.
+const firebaseConfig = {
+  apiKey: "AIzaSyCZyOBjC7NFOiq7cwRcKKq5oRBIeqFrwY0",
+  authDomain: "hausrat-inventar.firebaseapp.com",
+  projectId: "hausrat-inventar",
+  storageBucket: "hausrat-inventar.firebasestorage.app",
+  messagingSenderId: "750703963019",
+  appId: "1:750703963019:web:b6cadb29f55d63f6b55d8e"
+};
+const firebaseReady = firebaseConfig.apiKey !== "REPLACE_ME";
 
-    <div class="section-divider">Beitrag &amp; Deckung</div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Zahlweise</label>
-        <select class="form-input" id="k-zahlweise">
-          <option value="">— wählen —</option>
-          <option>Monatlich</option>
-          <option>Vierteljährlich</option>
-          <option>Halbjährlich</option>
-          <option>Jährlich</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Beitrag (€)</label>
-        <input class="form-input" type="number" id="k-beitrag" placeholder="z. B. 12,50" min="0" step="0.01">
-      </div>
-    </div>
-    <div class="form-grid">
-      <div class="form-row">
-        <label class="form-label">Vereinbarte Versicherungssumme (€)</label>
-        <input class="form-input" type="number" id="k-vssumme" placeholder="z. B. 80000" min="0">
-      </div>
-      <div class="form-row">
-        <label class="form-label">Selbstbeteiligung (€)</label>
-        <input class="form-input" type="number" id="k-sb" placeholder="z. B. 150" min="0">
-      </div>
-    </div>
-    <div class="form-row">
-      <label class="form-label">Eingeschlossene Zusatzleistungen</label>
-      <input class="form-input" type="text" id="k-zusatz" placeholder="z. B. Elementarschäden, Fahrraddiebstahl">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Notizen</label>
-      <textarea class="form-input" id="k-notizen" rows="2" placeholder="Weitere Infos…" style="resize:vertical"></textarea>
-    </div>
+// Fotos werden komprimiert direkt als Base64 im Firestore-Dokument gespeichert
+// (kein Firebase Storage nötig — bleibt im kostenlosen Spark-Tarif, kein Blaze-Upgrade/Kreditkarte).
+let app, auth, db;
+if (firebaseReady) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+}
 
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn" onclick="document.getElementById('modal-kunden').classList.remove('open')" style="flex:1">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveKunden()" style="flex:2">Speichern ✓</button>
-    </div>
-  </div>
-</div>
-
-<!-- KATEGORIEN-MODAL -->
-<div class="modal-bg" id="modal-cats">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>Kategorien bearbeiten</h2>
-    <div class="modal-sub">Tippe auf ✕ zum Löschen. Eigene Kategorien jederzeit ergänzen.</div>
-    <div class="cat-list" id="cat-list"></div>
-    <div class="cat-add-row">
-      <input class="form-input" type="text" id="new-cat-inp" placeholder="Neue Kategorie…" style="flex:1">
-      <button class="btn btn-success" onclick="addCat()">＋ Hinzufügen</button>
-    </div>
-    <button class="btn" onclick="document.getElementById('modal-cats').classList.remove('open')" style="margin-top:14px;width:100%;justify-content:center">Schließen</button>
-  </div>
-</div>
-
-<script>
-// ── AfA-Tabelle ──
+// ══════ AfA-Tabelle / Zeitwert ══════
 const AFA = {
   'Elektronik':{p:0.20,jahre:5},
   'Möbel':{p:0.10,jahre:10},
@@ -425,7 +459,7 @@ const AFA = {
   'Kunstgegenstände':{p:0,jahre:99},
   'Sonstiges':{p:0.10,jahre:10}
 };
-const DEFAULT_CATS=Object.keys(AFA);
+const DEFAULT_CATS = Object.keys(AFA);
 
 function calcZw(neuwert,cat,year){
   if(!neuwert||!year)return null;
@@ -437,581 +471,441 @@ function calcZw(neuwert,cat,year){
     :neuwert*Math.max(0,1-(a.p||0.10)*alter);
   return Math.max(0,Math.round(zw));
 }
-
-// ── Persistenz ──
-let items=JSON.parse(localStorage.getItem('hri7')||'[]');
-let cats=JSON.parse(localStorage.getItem('hri7_cats')||JSON.stringify(DEFAULT_CATS));
-let kunden=JSON.parse(localStorage.getItem('hri7_kunden')||'{}');
-
-function save(){localStorage.setItem('hri7',JSON.stringify(items));}
-function saveCats(){localStorage.setItem('hri7_cats',JSON.stringify(cats));}
-function saveKundenData(){localStorage.setItem('hri7_kunden',JSON.stringify(kunden));}
 function fmt(n){return Math.round(n).toLocaleString('de-DE')+' €';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function triggerFile(id){document.getElementById(id).click();}
 function fv(id){return document.getElementById(id).value.trim();}
+function $(id){return document.getElementById(id);}
 
-// ── Kundendaten ──
-function openKunden(){
-  const k=kunden;
-  ['name','adresse','telefon','email','gesellschaft','ansprechpartner',
-   'vsnr','vertragsnr','beginn','ende','zahlweise','beitrag','vssumme','sb','zusatz','notizen'
-  ].forEach(f=>{
-    const el=document.getElementById('k-'+f);
-    if(el)el.value=k[f]||'';
-  });
-  document.getElementById('modal-kunden').classList.add('open');
-}
-function saveKunden(){
-  ['name','adresse','telefon','email','gesellschaft','ansprechpartner',
-   'vsnr','vertragsnr','beginn','ende','zahlweise','beitrag','vssumme','sb','zusatz','notizen'
-  ].forEach(f=>{
-    const el=document.getElementById('k-'+f);
-    if(el)kunden[f]=el.value.trim();
-  });
-  saveKundenData();
-  updateKundenBanner();
-  document.getElementById('modal-kunden').classList.remove('open');
-}
-function updateKundenBanner(){
-  const k=kunden;
-  const banner=document.getElementById('kunden-banner');
-  const row=document.getElementById('kunden-banner-row');
-  const hdrSub=document.getElementById('hdr-owner');
-  if(!k.name&&!k.gesellschaft){
-    banner.style.display='none';
-    hdrSub.textContent='Kundendaten eingeben';
-    return;
-  }
-  hdrSub.textContent=k.name||'Kundendaten';
-  banner.style.display='block';
-  const items2=[
-    {label:'Versicherer',val:k.gesellschaft},
-    {label:'VS-Nummer',val:k.vsnr},
-    {label:'Vertragsnr.',val:k.vertragsnr},
-    {label:'Zahlweise',val:k.zahlweise?`${k.zahlweise}${k.beitrag?' · '+parseFloat(k.beitrag).toLocaleString('de-DE')+' €':''}`:k.beitrag?parseFloat(k.beitrag).toLocaleString('de-DE')+' €':''},
-    {label:'Ver.-Summe',val:k.vssumme?parseFloat(k.vssumme).toLocaleString('de-DE')+' €':''},
-    {label:'Selbstbeteil.',val:k.sb?parseFloat(k.sb).toLocaleString('de-DE')+' €':''},
-  ].filter(i=>i.val);
-  row.innerHTML=items2.slice(0,6).map(i=>
-    `<div><div class="kunden-banner-label">${esc(i.label)}</div><div class="kunden-banner-item">${esc(i.val)}</div></div>`
-  ).join('');
-}
-updateKundenBanner();
-
-// ── Kategorien ──
-function fillCatSelect(val){
-  const sel=document.getElementById('f-cat');
-  sel.innerHTML=cats.map(c=>`<option${c===val?' selected':''}>${esc(c)}</option>`).join('');
-}
-function openCatManager(){renderCatList();document.getElementById('modal-cats').classList.add('open');}
-function renderCatList(){
-  document.getElementById('cat-list').innerHTML=cats.map((c,i)=>`
-    <div class="cat-item">
-      <span class="cat-item-name">${esc(c)}</span>
-      <button class="cat-item-del" onclick="deleteCat(${i})">✕</button>
-    </div>`).join('');
-}
-function deleteCat(i){
-  if(cats.length<=1){alert('Mindestens eine Kategorie erforderlich.');return;}
-  cats.splice(i,1);saveCats();renderCatList();fillCatSelect();
-}
-function addCat(){
-  const inp=document.getElementById('new-cat-inp');
-  const name=inp.value.trim();
-  if(!name||cats.includes(name))return;
-  cats.push(name);saveCats();renderCatList();fillCatSelect(name);inp.value='';
-}
-
-// ── Modal-State ──
+// ══════ State ══════
+let currentUser=null;
+let items=[];
+let kunden={};
+let cats=[...DEFAULT_CATS];
+let unsubItems=null, unsubKunden=null, unsubCats=null;
+let currentTab='inventar';
 let editId=null;
-let currentPhoto=null,currentPhotoB64=null;
-let currentTab='foto';
-let aiResult=null;
-let searchPending=false,retryTimer=null;
+let pendingPhotoData=null, pendingReceiptData=null;
 
-// KERN: Set der manuell gesperrten Felder — KI überschreibt diese NIE
-let lockedFields=new Set();
-
-function lockField(id){
-  lockedFields.add(id);
-  const el=document.getElementById(id);
-  if(el){el.classList.remove('auto-filled','receipt-filled');el.classList.add('manual-locked');}
-  // Badges aktualisieren
-  const autoB=document.getElementById('badge-'+id.replace('f-',''));
-  const rcptB=document.getElementById('rbadge-'+id.replace('f-',''));
-  const manB=document.getElementById('mbadge-'+id.replace('f-',''));
-  if(autoB)autoB.style.display='none';
-  if(rcptB)rcptB.style.display='none';
-  if(manB)manB.style.display='';
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600);
 }
-function isLocked(id){return lockedFields.has(id);}
 
-function onManualInput(id){
-  // Erst nach echtem Tipp sperren (nicht beim programmatischen Setzen)
-  lockField(id);
-  clearTimeout(retryTimer);
-  document.getElementById('retry-btn').style.display='';
-  if(id==='f-neuwert'){
-    aiResult=null;
-    document.getElementById('neuwert-result-block').innerHTML='';
-    ['badge-neuwert','rbadge-neuwert'].forEach(b=>document.getElementById(b).style.display='none');
+// ══════ Foto-Komprimierung (Fotos landen als Base64 direkt im Firestore-Dokument) ══════
+function loadImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=e.target.result;};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+function drawToDataUrl(img,maxDim,quality){
+  let {width,height}=img;
+  if(width>height){if(width>maxDim){height=Math.round(height*maxDim/width);width=maxDim;}}
+  else{if(height>maxDim){width=Math.round(width*maxDim/height);height=maxDim;}}
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  canvas.getContext('2d').drawImage(img,0,0,width,height);
+  return canvas.toDataURL('image/jpeg',quality);
+}
+// Komprimiert iterativ, bis die Base64-Größe unter maxBytes liegt (Firestore-Doku-Limit: 1 MiB)
+async function compressToLimit(file,maxBytes){
+  const img=await loadImage(file);
+  let maxDim=1100,quality=0.75,dataUrl=drawToDataUrl(img,maxDim,quality);
+  while(dataUrl.length>maxBytes&&(quality>0.35||maxDim>500)){
+    if(quality>0.35)quality-=0.1;else maxDim=Math.round(maxDim*0.8);
+    dataUrl=drawToDataUrl(img,maxDim,quality);
   }
-  if(id==='f-year'||id==='f-neuwert')updateZeitwertBlock();
-  if(id==='f-name'||id==='f-serial'){
-    retryTimer=setTimeout(()=>{
-      if((fv('f-name')||currentPhotoB64)&&!isLocked('f-neuwert'))triggerSearch();
-    },1200);
-  }
+  return dataUrl;
 }
 
-// Feld setzen — nur wenn nicht manuell gesperrt
-function setField(id,val,source){
-  if(!val&&val!==0)return;
-  if(isLocked(id))return; // SCHUTZ: manuell gesperrte Felder nie überschreiben
-  const el=document.getElementById(id);
-  if(!el)return;
-  el.value=val;
-  el.classList.remove('auto-filled','receipt-filled','manual-locked');
-  if(source==='auto')el.classList.add('auto-filled');
-  if(source==='receipt')el.classList.add('receipt-filled');
-  const key=id.replace('f-','');
-  const autoB=document.getElementById('badge-'+key);
-  const rcptB=document.getElementById('rbadge-'+key);
-  const manB=document.getElementById('mbadge-'+key);
-  if(autoB)autoB.style.display=source==='auto'?'':'none';
-  if(rcptB)rcptB.style.display=source==='receipt'?'':'none';
-  if(manB)manB.style.display='none';
+// ══════ Netzwerkstatus ══════
+function updateNetStatus(){
+  const online=navigator.onLine;
+  const pill=$('net-pill');
+  pill.className='net-pill '+(online?'online':'offline');
+  $('net-text').textContent=online?'Online':'Offline — wird synchronisiert';
+}
+window.addEventListener('online',updateNetStatus);
+window.addEventListener('offline',updateNetStatus);
+
+// ══════ Auth ══════
+let authMode='login';
+function setAuthMode(mode){
+  authMode=mode;
+  $('auth-tab-login').classList.toggle('active',mode==='login');
+  $('auth-tab-register').classList.toggle('active',mode==='register');
+  $('auth-submit').textContent=mode==='login'?'Anmelden':'Konto erstellen';
+  $('auth-error').style.display='none';
+}
+$('auth-tab-login').onclick=()=>setAuthMode('login');
+$('auth-tab-register').onclick=()=>setAuthMode('register');
+
+function authErrorMsg(code){
+  const map={
+    'auth/invalid-email':'Ungültige E-Mail-Adresse.',
+    'auth/user-not-found':'Kein Konto mit dieser E-Mail gefunden.',
+    'auth/wrong-password':'Falsches Passwort.',
+    'auth/invalid-credential':'E-Mail oder Passwort falsch.',
+    'auth/email-already-in-use':'Für diese E-Mail existiert bereits ein Konto.',
+    'auth/weak-password':'Passwort muss mindestens 6 Zeichen haben.',
+    'auth/too-many-requests':'Zu viele Versuche. Bitte kurz warten.',
+    'auth/network-request-failed':'Keine Verbindung — bitte Internet prüfen.'
+  };
+  return map[code]||'Etwas ist schiefgelaufen. Bitte erneut versuchen.';
+}
+function showAuthError(msg){const e=$('auth-error');e.textContent=msg;e.style.display='block';}
+
+$('auth-form').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  if(!firebaseReady)return;
+  const email=fv('auth-email'),pw=$('auth-password').value;
+  $('auth-error').style.display='none';
+  try{
+    if(authMode==='login')await signInWithEmailAndPassword(auth,email,pw);
+    else await createUserWithEmailAndPassword(auth,email,pw);
+  }catch(err){console.error(err);showAuthError(authErrorMsg(err.code));}
+});
+$('auth-forgot-btn').onclick=async()=>{
+  const email=fv('auth-email');
+  if(!email){showAuthError('Bitte zuerst E-Mail-Adresse eingeben.');return;}
+  try{await sendPasswordResetEmail(auth,email);toast('Reset-Mail gesendet — Posteingang prüfen.');}
+  catch(err){showAuthError(authErrorMsg(err.code));}
+};
+$('more-logout-btn').onclick=()=>signOut(auth);
+$('more-pw-reset-btn').onclick=async()=>{
+  if(!currentUser)return;
+  try{await sendPasswordResetEmail(auth,currentUser.email);toast('Reset-Mail gesendet — Posteingang prüfen.');}
+  catch(err){toast('Fehler beim Senden.');}
+};
+
+if(!firebaseReady){$('auth-setup-note').classList.remove('hidden');}
+
+if(firebaseReady){
+  onAuthStateChanged(auth,user=>{
+    $('splash').classList.add('hidden');
+    if(user){currentUser=user;showMain();subscribeUserData(user.uid);}
+    else{currentUser=null;unsubAll();showAuth();}
+  });
+}else{
+  $('splash').classList.add('hidden');
+  showAuth();
 }
 
-function setStatus(type,icon,title,detail){
-  const b=document.getElementById('status-banner');
-  b.className='status-banner '+type;
-  b.querySelector('.status-icon').innerHTML=icon;
-  document.getElementById('status-title').textContent=title;
-  document.getElementById('status-detail').textContent=detail;
+function showAuth(){$('view-auth').classList.remove('hidden');$('view-main').classList.add('hidden');}
+function showMain(){
+  $('view-auth').classList.add('hidden');$('view-main').classList.remove('hidden');
+  $('more-email').textContent=currentUser?currentUser.email:'—';
+  updateNetStatus();
 }
+function unsubAll(){
+  if(unsubItems)unsubItems();if(unsubKunden)unsubKunden();if(unsubCats)unsubCats();
+  items=[];kunden={};cats=[...DEFAULT_CATS];
+}
+
+// ══════ Daten-Sync ══════
+function subscribeUserData(uid){
+  const itemsQ=query(collection(db,'items'),where('userId','==',uid));
+  unsubItems=onSnapshot(itemsQ,{includeMetadataChanges:true},snap=>{
+    items=snap.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'}),_pending:d.metadata.hasPendingWrites}));
+    items.sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+    renderAll();
+  },err=>console.error(err));
+
+  unsubKunden=onSnapshot(doc(db,'customerInfo',uid),snap=>{
+    kunden=snap.exists()?snap.data():{};
+    fillKundenForm();
+  },err=>console.error(err));
+
+  const catsRef=doc(db,'categories',uid);
+  unsubCats=onSnapshot(catsRef,snap=>{
+    if(snap.exists()){cats=snap.data().names||DEFAULT_CATS;}
+    else{cats=[...DEFAULT_CATS];setDoc(catsRef,{names:DEFAULT_CATS}).catch(()=>{});}
+    fillCatSelect();renderCatList();renderAll();
+  },err=>console.error(err));
+}
+
+// ══════ Tabs ══════
 function switchTab(tab){
   currentTab=tab;
-  document.getElementById('tab-foto').classList.toggle('active',tab==='foto');
-  document.getElementById('tab-rechnung').classList.toggle('active',tab==='rechnung');
-  document.getElementById('panel-foto').classList.toggle('active',tab==='foto');
-  document.getElementById('panel-rechnung').classList.toggle('active',tab==='rechnung');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  $('fab-add').style.display=tab==='inventar'?'flex':'none';
 }
+document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 
-// ── Modal öffnen/schließen ──
-function startAdd(){
-  editId=null;currentPhoto=null;currentPhotoB64=null;aiResult=null;
-  lockedFields=new Set(); // keine gesperrten Felder für neuen Eintrag
-  document.getElementById('modal-title').textContent='Neuer Gegenstand';
-  document.getElementById('modal-sub').textContent='Fotografiere oder lade eine Rechnung hoch.';
-  resetForm();fillCatSelect();switchTab('foto');
-  setStatus('idle','📷','Warte auf Eingabe','Kamera, Galerie oder Rechnung');
-  document.getElementById('modal-main').classList.add('open');
-  setTimeout(()=>triggerFile('inp-cam'),200);
+// ══════ Kategorien ══════
+function fillCatSelect(val){
+  const sel=$('f-cat');
+  sel.innerHTML=cats.map(c=>`<option${c===val?' selected':''}>${esc(c)}</option>`).join('');
 }
-function openEdit(id){
+function renderCatList(){
+  $('cat-list').innerHTML=cats.map((c,i)=>`
+    <div class="cat-item">
+      <span class="cat-item-name">${esc(c)}</span>
+      <button class="cat-item-del" data-i="${i}">✕</button>
+    </div>`).join('');
+  $('cat-list').querySelectorAll('.cat-item-del').forEach(btn=>{
+    btn.onclick=()=>deleteCat(parseInt(btn.dataset.i));
+  });
+}
+async function saveCats(){
+  if(!currentUser)return;
+  await setDoc(doc(db,'categories',currentUser.uid),{names:cats});
+}
+function deleteCat(i){
+  if(cats.length<=1){toast('Mindestens eine Kategorie erforderlich.');return;}
+  cats.splice(i,1);saveCats();renderCatList();fillCatSelect();
+}
+$('cat-add-btn').onclick=()=>{
+  const inp=$('new-cat-inp');const name=inp.value.trim();
+  if(!name||cats.includes(name))return;
+  cats.push(name);saveCats();renderCatList();fillCatSelect(name);inp.value='';
+};
+
+// ══════ Kundendaten ══════
+const K_FIELDS=['name','adresse','telefon','email','gesellschaft','ansprechpartner',
+  'vsnr','vertragsnr','beginn','ende','zahlweise','beitrag','vssumme','sb','zusatz','notizen'];
+function fillKundenForm(){
+  K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)el.value=kunden[f]||'';});
+}
+$('k-save-btn').onclick=async()=>{
+  if(!currentUser)return;
+  const data={};K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)data[f]=el.value.trim();});
+  await setDoc(doc(db,'customerInfo',currentUser.uid),data);
+  toast('Kundendaten gespeichert ✓');
+};
+
+// ══════ Item-Modal ══════
+function photoBoxEmptyHtml(){return `<div class="pic-box-empty" id="photo-pick-btn"><span>📷</span><span>Foto</span></div>`;}
+function photoBoxSpinnerHtml(){return `<div class="pic-box-empty"><div class="spin" style="width:18px;height:18px;border-width:2px"></div></div>`;}
+function receiptChipEmptyHtml(){return `<button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>`;}
+function receiptChipDoneHtml(){return `<span class="receipt-chip">🧾 Beleg-Foto angehängt</span> <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button">ändern</button>`;}
+
+function resetItemForm(){
+  ['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).value='');
+  $('zeitwert-block').innerHTML='';
+  $('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();
+  $('photo-pick-btn').onclick=()=>$('inp-cam').click();
+  $('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();
+  $('receipt-pick-btn').onclick=()=>$('inp-receipt').click();
+  pendingPhotoData=null;pendingReceiptData=null;
+}
+function openAddItem(){
+  editId=null;resetItemForm();fillCatSelect();
+  $('item-modal-title').textContent='Neuer Gegenstand';
+  $('modal-item').classList.add('open');
+  setTimeout(()=>$('inp-cam').click(),150);
+}
+function openEditItem(id){
   const item=items.find(i=>i.id===id);if(!item)return;
-  editId=id;currentPhoto=item.photo||null;currentPhotoB64=null;aiResult=null;
-  // Beim Bearbeiten: alle bereits befüllten Felder als manuell sperren
-  lockedFields=new Set();
-  document.getElementById('modal-title').textContent='Bearbeiten';
-  document.getElementById('modal-sub').textContent='Felder manuell ändern — KI überschreibt nur leere Felder.';
-  resetForm();fillCatSelect(item.cat);switchTab('foto');
-  // Felder direkt setzen (ohne Lock — der kommt danach)
-  document.getElementById('f-name').value=item.name||'';
-  document.getElementById('f-year').value=item.year||'';
-  document.getElementById('f-serial').value=item.serial||'';
-  document.getElementById('f-neuwert').value=item.neuwert||'';
-  // Alle befüllten Felder sperren (damit KI sie beim erneuten Scannen nicht überschreibt)
-  if(item.name)lockedFields.add('f-name');
-  if(item.year)lockedFields.add('f-year');
-  if(item.serial)lockedFields.add('f-serial');
-  if(item.neuwert)lockedFields.add('f-neuwert');
-  // CSS anzeigen
-  lockedFields.forEach(fid=>{
-    const el=document.getElementById(fid);
-    if(el)el.classList.add('manual-locked');
-    const manB=document.getElementById('mbadge-'+fid.replace('f-',''));
-    if(manB)manB.style.display='';
-  });
+  editId=id;resetItemForm();fillCatSelect(item.category);
+  $('item-modal-title').textContent='Bearbeiten';
+  $('f-name').value=item.name||'';
+  $('f-year').value=item.year||'';
+  $('f-serial').value=item.serial||'';
+  $('f-neuwert').value=item.neuwert||'';
+  $('f-note').value=item.note||'';
   if(item.photo){
-    document.getElementById('photo-thumb-wrap').innerHTML=
-      `<img src="${item.photo}" class="photo-box" onclick="triggerFile('inp-cam')" style="cursor:pointer">`;
+    $('photo-thumb-wrap').innerHTML=`<img src="${item.photo}" class="pic-box" id="photo-pick-btn">`;
+    $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   }
-  if(item.source)document.getElementById('neuwert-result-block').innerHTML=buildSourceHtml(item);
-  updateZeitwertBlock();
-  setStatus(item.neuwert?'ok':'warn',item.neuwert?'✓':'⚠',
-    item.name||(item.neuwert?'Gegenstand':'Kein Neuwert'),
-    item.neuwert?(item.source||'Manuell'):'Foto neu aufnehmen oder Felder entsperren');
-  document.getElementById('retry-btn').style.display='';
-  document.getElementById('modal-main').classList.add('open');
-}
-function closeMain(){document.getElementById('modal-main').classList.remove('open');editId=null;}
-
-function resetForm(){
-  ['f-name','f-year','f-neuwert','f-serial'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.value='';el.classList.remove('auto-filled','receipt-filled','manual-locked');
-  });
-  document.getElementById('f-cat').classList.remove('auto-filled','receipt-filled','manual-locked');
-  document.querySelectorAll('[id^="badge-"],[id^="rbadge-"],[id^="mbadge-"]').forEach(el=>el.style.display='none');
-  document.getElementById('neuwert-result-block').innerHTML='';
-  document.getElementById('zeitwert-block').innerHTML='';
-  document.getElementById('retry-btn').style.display='none';
-  document.getElementById('photo-thumb-wrap').innerHTML=
-    `<div class="photo-box-empty" onclick="triggerFile('inp-cam')"><span>📷</span><span>Foto</span></div>`;
-  document.getElementById('receipt-preview').innerHTML='';
-  document.getElementById('receipt-drop').style.borderColor='';
-}
-
-// ── Foto ausgewählt ──
-function onPhotoSelected(e){
-  const f=e.target.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    currentPhoto=ev.target.result;
-    currentPhotoB64=currentPhoto.split(',')[1];
-    document.getElementById('photo-thumb-wrap').innerHTML=
-      `<img src="${currentPhoto}" class="photo-box" onclick="triggerFile('inp-cam')" style="cursor:pointer">`;
-    setStatus('scanning','<div class="spinner spinner-lg"></div>','Erkenne Gegenstand…','KI analysiert Foto und sucht Neuwert');
-    runAi({fromPhoto:true});
-  };
-  reader.readAsDataURL(f);
-  e.target.value='';
-}
-
-// ── Rechnung hochladen ──
-function onReceiptSelected(e){
-  const f=e.target.files[0];if(!f)return;
-  const isPdf=f.type==='application/pdf';
-  setStatus('scanning','<div class="spinner spinner-lg"></div>','Lese Rechnung…','KI extrahiert Bezeichnung, Datum und Preis');
-  document.getElementById('receipt-drop').style.borderColor='#1D9E75';
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const b64=ev.target.result.split(',')[1];
-    document.getElementById('receipt-preview').innerHTML=isPdf
-      ?`<div style="font-size:12px;color:#185FA5;margin-top:6px">📄 ${esc(f.name)}</div>`
-      :`<img src="${ev.target.result}" class="receipt-thumb">`;
-    runAi({fromReceipt:true,receiptB64:b64,receiptType:isPdf?'application/pdf':'image/jpeg'});
-  };
-  reader.readAsDataURL(f);
-  e.target.value='';
-}
-
-function triggerSearch(){
-  if(searchPending)return;
-  setStatus('scanning','<div class="spinner spinner-lg"></div>','Suche Neuwert…','Bitte warten');
-  runAi({fromPhoto:!!currentPhotoB64});
-}
-
-// ── Haupt-KI-Funktion ──
-async function runAi({fromPhoto=false,fromReceipt=false,receiptB64=null,receiptType='image/jpeg'}={}){
-  if(searchPending)return;
-  searchPending=true;aiResult=null;
-
-  const name=fv('f-name'),year=fv('f-year'),serial=fv('f-serial'),cat=document.getElementById('f-cat').value;
-  const userContent=[];
-
-  if(fromReceipt&&receiptB64){
-    userContent.push({type:'document',source:{type:'base64',media_type:receiptType,data:receiptB64}});
-  } else if(fromPhoto&&currentPhotoB64){
-    userContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:currentPhotoB64}});
+  if(item.receipt){
+    $('receipt-chip-wrap').innerHTML=`<a class="receipt-chip" href="${item.receipt}" target="_blank">🧾 Beleg ansehen</a>
+      <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button" style="margin-left:6px">ändern</button>`;
+    $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }
+  updateZeitwertDisplay();
+  $('modal-item').classList.add('open');
+}
+function closeItemModal(){$('modal-item').classList.remove('open');editId=null;}
+$('item-cancel-btn').onclick=closeItemModal;
+$('fab-add').onclick=openAddItem;
+$('modal-item').addEventListener('click',e=>{if(e.target.id==='modal-item')closeItemModal();});
 
-  const prompt=fromReceipt
-    ?`Lies diese Rechnung: extrahiere Artikelbezeichnung, Kaufdatum (als Jahr), Preis, Modellnummer. Suche dann aktuellen Neuwert/Wiederbeschaffungswert in Deutschland 2026 falls Rechnungspreis älter als 2 Jahre.`
-    :fromPhoto&&!name
-      ?`Erkenne den Gegenstand auf dem Foto (Marke, Modell, Typ). Recherchiere aktuellen Neuwert in Deutschland 2026.${year?' Kaufjahr-Hinweis: '+year:''}`
-      :`Gegenstand: "${name}"${year?', Kaufjahr: '+year:''}${cat?', Kategorie: '+cat:''}${serial?', Modell: '+serial:''}. Aktuellen Neuwert in Deutschland 2026 recherchieren.`;
-  userContent.push({type:'text',text:prompt});
+$('cam-btn').onclick=()=>$('inp-cam').click();
+$('gal-btn').onclick=()=>$('inp-gal').click();
 
-  // Nur Felder befüllen die NICHT gesperrt sind — Info für KI
-  const needName=!isLocked('f-name'),needYear=!isLocked('f-year');
-  const needSerial=!isLocked('f-serial'),needNeuwert=!isLocked('f-neuwert');
-
+async function onPhotoFile(e){
+  const f=e.target.files[0];if(!f)return;
+  e.target.value='';
+  $('photo-thumb-wrap').innerHTML=photoBoxSpinnerHtml();
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:600,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        system:`Du bist Experte für Hausrat-Inventarisierung Deutschland 2026.
-Antworte NUR mit JSON ohne Markdown:
-{
-  "name":"${needName?'<Bezeichnung mit Marke+Modell>':'(nicht nötig, Feld ist manuell gesetzt)'}",
-  "cat":"<exakt eine von: ${cats.join('|')}>",
-  "year":"${needYear?'<Kaufjahr 4-stellig oder leer>':'(nicht nötig)'}",
-  "serial":"${needSerial?'<Modell-/Seriennr. oder leer>':'(nicht nötig)'}",
-  "price":${needNeuwert?'<Neuwert EUR ganze Zahl>':'0 (Feld manuell gesetzt, nicht überschreiben)'},
-  "source":"<Shopname z.B. Amazon.de>",
-  "sourceUrl":"<https://...URL>",
-  "note":"<kurze Anmerkung oder leer>",
-  "fromImage":<true wenn aus Foto/Rechnung erkannt>,
-  "fromReceipt":<true wenn aus Rechnung>
-}`,
-        messages:[{role:'user',content:userContent}]
-      })
-    });
-    const data=await resp.json();
-    const texts=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const match=texts.replace(/```json|```/g,'').match(/\{[\s\S]*?\}/);
-    if(!match)throw new Error('kein JSON');
-    const obj=JSON.parse(match[0]);
-
-    aiResult={
-      name:obj.name||'',cat:obj.cat||'',year:obj.year?String(obj.year):'',
-      serial:obj.serial||'',price:obj.price?Math.round(obj.price):0,
-      source:obj.source||'KI-Schätzung',sourceUrl:obj.sourceUrl||'',
-      note:obj.note||'',fromImage:!!obj.fromImage,fromReceipt:!!obj.fromReceipt
-    };
-
-    const src=aiResult.fromReceipt?'receipt':'auto';
-    // setField prüft intern ob gesperrt — doppelte Sicherheit
-    if(aiResult.name)setField('f-name',aiResult.name,src);
-    if(aiResult.cat&&cats.includes(aiResult.cat))setField('f-cat',aiResult.cat,src);
-    if(aiResult.year)setField('f-year',aiResult.year,src);
-    if(aiResult.serial)setField('f-serial',aiResult.serial,src);
-
-    if(aiResult.price&&needNeuwert){
-      document.getElementById('f-neuwert').value=aiResult.price;
-      document.getElementById('f-neuwert').classList.remove('manual-locked');
-      document.getElementById('f-neuwert').classList.add(src==='receipt'?'receipt-filled':'auto-filled');
-      document.getElementById(src==='receipt'?'rbadge-neuwert':'badge-neuwert').style.display='';
-      document.getElementById('neuwert-result-block').innerHTML=`
-        <div class="neuwert-result">
-          <div class="neuwert-result-price">${aiResult.price.toLocaleString('de-DE')} €</div>
-          <div class="neuwert-result-source">
-            ${aiResult.fromReceipt?'<span style="background:#E6F1FB;color:#185FA5;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:500">🧾 Rechnung</span>':''}
-            ${aiResult.sourceUrl
-              ?`<a href="${esc(aiResult.sourceUrl)}" target="_blank">${esc(aiResult.source)}</a>
-                <a href="${esc(aiResult.sourceUrl)}" target="_blank" class="source-btn">🔗 Prüfen</a>`
-              :`<span>${esc(aiResult.source)}</span>`}
-          </div>
-          ${aiResult.note?`<div class="neuwert-result-note">${esc(aiResult.note)}</div>`:''}
-        </div>`;
-      updateZeitwertBlock();
-    }
-    const nameShown=fv('f-name')||aiResult.name||'Erkannt';
-    setStatus('ok','✓',nameShown,`Neuwert: ${aiResult.price?fmt(aiResult.price):'—'}${aiResult.fromReceipt?' · aus Rechnung':' · '+aiResult.source}`);
-    document.getElementById('retry-btn').style.display='';
-  }catch(err){
-    console.error(err);
-    setStatus('warn','⚠','Nicht erkannt','Bezeichnung eingeben und ↺ drücken');
-    document.getElementById('neuwert-result-block').innerHTML=
-      `<div style="font-size:12px;color:#854F0B;padding:6px 0">Nicht gefunden — Bezeichnung anpassen und ↺ drücken.</div>`;
-    document.getElementById('retry-btn').style.display='';
-  }
-  searchPending=false;
+    pendingPhotoData=await compressToLimit(f,500000);
+    $('photo-thumb-wrap').innerHTML=`<img src="${pendingPhotoData}" class="pic-box" id="photo-pick-btn">`;
+    $('photo-pick-btn').onclick=()=>$('inp-cam').click();
+  }catch(err){console.error(err);toast('Foto konnte nicht verarbeitet werden.');$('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();$('photo-pick-btn').onclick=()=>$('inp-cam').click();}
 }
+$('inp-cam').addEventListener('change',onPhotoFile);
+$('inp-gal').addEventListener('change',onPhotoFile);
+$('inp-receipt').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  e.target.value='';
+  $('receipt-chip-wrap').innerHTML=`<span class="receipt-chip">⏳ wird verarbeitet…</span>`;
+  try{
+    pendingReceiptData=await compressToLimit(f,280000);
+    $('receipt-chip-wrap').innerHTML=receiptChipDoneHtml();
+    $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
+  }catch(err){console.error(err);toast('Beleg konnte nicht verarbeitet werden.');$('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();$('receipt-pick-btn').onclick=()=>$('inp-receipt').click();}
+});
 
-function updateZeitwertBlock(){
-  const neuwert=parseFloat(document.getElementById('f-neuwert').value)||0;
-  const year=fv('f-year'),cat=document.getElementById('f-cat').value;
-  const el=document.getElementById('zeitwert-block');
+$('price-search-btn').onclick=()=>{
+  const name=fv('f-name');
+  if(!name){toast('Bitte zuerst eine Bezeichnung eingeben.');return;}
+  const serial=fv('f-serial');
+  const q=encodeURIComponent(name+(serial?' '+serial:''));
+  window.open('https://www.google.com/search?tbm=shop&q='+q,'_blank','noopener');
+};
+['f-year','f-neuwert','f-cat'].forEach(id=>$(id).addEventListener('input',updateZeitwertDisplay));
+$('f-cat').addEventListener('change',updateZeitwertDisplay);
+function updateZeitwertDisplay(){
+  const neuwert=parseFloat($('f-neuwert').value)||0;
+  const year=fv('f-year'),cat=$('f-cat').value;
+  const el=$('zeitwert-block');
   if(!neuwert||!year){el.innerHTML='';return;}
   const zw=calcZw(neuwert,cat,year);
   const alter=new Date().getFullYear()-parseInt(year);
-  const pct=Math.round((zw/neuwert)*100);
-  const a=AFA[cat]||{p:0.10};
-  const afaTxt=a.sonder==='küche'?'24 % im 1. Jahr, dann 4 %/Jahr':Math.round((a.p||0.10)*100)+' %/Jahr';
-  el.innerHTML=`<div class="zeitwert-info">
-    Zeitwert nach ${alter} Jahr${alter!==1?'en':''}: <strong>${fmt(zw)}</strong> (${pct} %) · ${afaTxt}<br>
-    <span style="font-size:11px;opacity:0.8">Hausratversicherung zahlt i.d.R. Neuwert/Wiederbeschaffungswert.</span>
-  </div>`;
+  const pct=neuwert?Math.round((zw/neuwert)*100):0;
+  el.innerHTML=`<div class="zeitwert-info">Zeitwert nach ${alter} Jahr${alter!==1?'en':''}: <strong>${fmt(zw)}</strong> (${pct} %)<br>Hausratversicherung zahlt i. d. R. den Neuwert/Wiederbeschaffungswert.</div>`;
 }
 
-function buildSourceHtml(item){
-  if(!item.source)return'';
-  return`<div class="neuwert-result">
-    <div class="neuwert-result-source">
-      Quelle: ${item.sourceUrl
-        ?`<a href="${esc(item.sourceUrl)}" target="_blank">${esc(item.source)}</a>
-           <a href="${esc(item.sourceUrl)}" target="_blank" class="source-btn">🔗 Prüfen</a>`
-        :`<span>${esc(item.source)}</span>`}
-    </div>
-    ${item.note?`<div class="neuwert-result-note">${esc(item.note)}</div>`:''}
-  </div>`;
-}
-
-// ── Speichern ──
-function saveItem(){
+$('item-save-btn').onclick=async()=>{
+  if(!currentUser)return;
   const name=fv('f-name');
-  if(!name){document.getElementById('f-name').focus();return;}
-  const neuwert=parseFloat(document.getElementById('f-neuwert').value)||0;
-  const cat=document.getElementById('f-cat').value;
-  const year=fv('f-year');
+  if(!name){$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
+  const cat=$('f-cat').value,year=fv('f-year');
+  const neuwert=parseFloat($('f-neuwert').value)||0;
   const base={
-    name,cat,year,serial:fv('f-serial'),
-    neuwert,zeitwert:calcZw(neuwert,cat,year),
-    aiEstimated:!!(aiResult&&!aiResult.fromReceipt),
-    aiFromImage:!!(aiResult&&aiResult.fromImage&&!aiResult.fromReceipt),
-    fromReceipt:!!(aiResult&&aiResult.fromReceipt),
-    source:aiResult?aiResult.source:'',
-    sourceUrl:aiResult?aiResult.sourceUrl:'',
-    note:aiResult?aiResult.note:''
+    userId:currentUser.uid,name,category:cat,year,serial:fv('f-serial'),
+    neuwert,zeitwert:calcZw(neuwert,cat,year),note:fv('f-note'),
+    updatedAt:serverTimestamp()
   };
-  if(editId){
-    const item=items.find(i=>i.id===editId);if(!item)return;
-    Object.assign(item,base);
-    if(currentPhoto)item.photo=currentPhoto;
-  }else{
-    items.push({id:Date.now(),photo:currentPhoto,...base});
-  }
-  save();closeMain();render();
-}
-
-// ── Einzelschätzung aus Liste ──
-async function estimateSingle(id){
-  const item=items.find(i=>i.id===id);if(!item)return;
-  item._loading=true;render();
+  if(pendingPhotoData)base.photo=pendingPhotoData;
+  if(pendingReceiptData)base.receipt=pendingReceiptData;
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:400,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        system:`Experte Hausrat Deutschland 2026. NUR JSON ohne Markdown: {"price":<Zahl>,"source":"<Shop>","sourceUrl":"<URL>","note":""}`,
-        messages:[{role:'user',content:`"${item.name}"${item.year?', Kaufjahr '+item.year:''}${item.cat?', '+item.cat:''}. Neuwert 2026?`}]
-      })
-    });
-    const data=await resp.json();
-    const texts=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const match=texts.replace(/```json|```/g,'').match(/\{[\s\S]*?\}/);
-    if(match){
-      const obj=JSON.parse(match[0]);
-      if(obj.price&&!isNaN(obj.price)){
-        item.neuwert=Math.round(obj.price);item.aiEstimated=true;
-        item.source=obj.source||'KI-Schätzung';item.sourceUrl=obj.sourceUrl||'';item.note=obj.note||'';
-        item.zeitwert=calcZw(item.neuwert,item.cat,item.year);
-      }
+    if(editId){
+      await updateDoc(doc(db,'items',editId),base);
+    }else{
+      base.status='active';base.createdAt=serverTimestamp();
+      await addDoc(collection(db,'items'),base);
     }
-  }catch(e){console.error(e);}
-  item._loading=false;save();render();
+    closeItemModal();
+    toast('Gespeichert ✓');
+  }catch(err){console.error(err);toast('Fehler beim Speichern.');}
+};
+
+async function archiveItem(id){
+  await updateDoc(doc(db,'items',id),{status:'archived',archivedAt:serverTimestamp()});
+  toast('Archiviert.');
 }
-async function estimateAll(){
-  const missing=items.filter(i=>!i.neuwert&&!i._loading);
-  if(!missing.length){alert('Alle Positionen haben bereits einen Neuwert.');return;}
-  for(const item of missing)await estimateSingle(item.id);
+async function restoreItem(id){
+  await updateDoc(doc(db,'items',id),{status:'active',archivedAt:null});
+  toast('Wiederhergestellt.');
 }
-function clearAll(){if(!confirm('Wirklich alle Daten löschen?'))return;items=[];save();render();}
+window.archiveItem=archiveItem;
+window.restoreItem=restoreItem;
+window.openEditItem=openEditItem;
 
-// ── Excel-Export mit Kundendaten-Blatt ──
-function exportXLSX(){
-  const date=new Date().toLocaleDateString('de-DE');
-  const wb=XLSX.utils.book_new();
+// ══════ Rendern ══════
+function renderAll(){renderInventar();renderArchiv();}
 
-  // Blatt 1: Kundendaten
-  const k=kunden;
-  const kRows=[
-    ['Hausrat-Inventar — Kundendaten',''],
-    ['Stand:',date],
-    [],
-    ['Name:',k.name||''],
-    ['Adresse:',k.adresse||''],
-    ['Telefon:',k.telefon||''],
-    ['E-Mail:',k.email||''],
-    [],
-    ['Versicherungsgesellschaft:',k.gesellschaft||''],
-    ['Ansprechpartner:',k.ansprechpartner||''],
-    ['Versicherungsnummer:',k.vsnr||''],
-    ['Vertragsnummer:',k.vertragsnr||''],
-    ['Vertragsbeginn:',k.beginn||''],
-    ['Vertragsende/Laufzeit:',k.ende||''],
-    [],
-    ['Zahlweise:',k.zahlweise||''],
-    ['Beitrag (€):',k.beitrag?parseFloat(k.beitrag):''],
-    ['Vereinbarte Versicherungssumme (€):',k.vssumme?parseFloat(k.vssumme):''],
-    ['Selbstbeteiligung (€):',k.sb?parseFloat(k.sb):''],
-    ['Zusatzleistungen:',k.zusatz||''],
-    [],
-    ['Ermittelter Gesamtneuwert (€):','=Inventar!E'+(5+items.length+1)],
-    ['Empf. Versicherungssumme (+20 %) (€):','=Inventar!E'+(5+items.length+2)],
-    [],
-    ['Notizen:',k.notizen||'']
-  ];
-  const wsK=XLSX.utils.aoa_to_sheet(kRows);
-  wsK['!cols']=[{wch:36},{wch:40}];
-  XLSX.utils.book_append_sheet(wb,wsK,'Kundendaten');
-
-  // Blatt 2: Inventar
-  const invRows=[
-    ['Hausrat-Inventar'],
-    ['Eigentümer: '+(k.name||'—'),'','','','Stand: '+date,'','',''],
-    [],
-    ['Kategorie','Bezeichnung','Modell/Seriennr.','Kaufjahr','Neuwert (€)','Zeitwert (€)','Quelle','URL']
-  ];
-  let totalN=0,totalZ=0;
-  const allCats=[...new Set([...cats,...items.map(i=>i.cat)])];
-  for(const cat of allCats){
-    for(const item of items.filter(i=>i.cat===cat)){
-      invRows.push([cat,item.name,item.serial||'',item.year||'',item.neuwert||0,item.zeitwert||'',item.source||'Manuell',item.sourceUrl||'']);
-      totalN+=item.neuwert||0;totalZ+=item.zeitwert||0;
-    }
-  }
-  invRows.push([],['','GESAMT','','',totalN,totalZ,'','']);
-  invRows.push(['','Empf. Versicherungssumme (Neuwert +20 %)','','',Math.round(totalN*1.2),'','','']);
-  const wsI=XLSX.utils.aoa_to_sheet(invRows);
-  wsI['!cols']=[{wch:20},{wch:34},{wch:20},{wch:10},{wch:13},{wch:13},{wch:20},{wch:36}];
-  XLSX.utils.book_append_sheet(wb,wsI,'Inventar');
-
-  XLSX.writeFile(wb,'Hausrat_'+date.replace(/\./g,'-')+'.xlsx');
+function itemCard(item,archived){
+  const photoEl=item.photo?`<img class="card-photo" src="${item.photo}" alt="">`:`<div class="card-photo-empty">📷</div>`;
+  const pending=item._pending?`<div class="pending-tag">⏳ wird synchronisiert</div>`:'';
+  const priceEl=item.neuwert
+    ?`<div class="card-neuwert">${fmt(item.neuwert)}</div>${item.zeitwert?`<div class="card-zeitwert">${fmt(item.zeitwert)} Zeitwert</div>`:''}`
+    :`<div class="card-neuwert" style="color:var(--warn);font-size:12px">kein Preis</div>`;
+  const badge=archived?`<span class="badge badge-archived">Archiviert</span>`
+    :(item.neuwert?`<span class="badge badge-ok">✓ Erfasst</span>`:`<span class="badge badge-missing">Preis fehlt</span>`);
+  const actions=archived
+    ?`<button class="icon-btn" onclick="event.stopPropagation();restoreItem('${item.id}')" title="Wiederherstellen">↺</button>`
+    :`<button class="icon-btn" onclick="event.stopPropagation();archiveItem('${item.id}')" title="Archivieren">🗄</button>`;
+  return `<div class="card">
+    <div class="card-main" onclick="openEditItem('${item.id}')">${photoEl}
+      <div class="card-info">
+        <div class="card-name">${esc(item.name)}</div>
+        <div class="card-meta">${esc(item.category||'')}${item.year?' · '+item.year:''}${item.serial?' · '+esc(item.serial):''}</div>
+        ${pending}
+      </div>
+      <div class="card-price">${priceEl}</div>
+    </div>
+    <div class="card-footer">${badge}<div class="card-actions">${actions}</div></div>
+  </div>`;
 }
 
-// ── Render ──
-function render(){
-  const allCats=[...new Set([...cats,...items.map(i=>i.cat)])];
+function renderInventar(){
+  const active=items.filter(i=>i.status!=='archived');
   let totalN=0,withPhoto=0,html='';
-  if(!items.length){
-    html=`<div class="empty"><div class="empty-icon">📦</div><div>Noch nichts erfasst.<br>Tippe auf <strong>＋</strong> — dann fotografieren oder Rechnung hochladen.</div></div>`;
+  if(!active.length){
+    html=`<div class="empty"><div class="empty-icon">📦</div><div>Noch nichts erfasst.<br>Tippe unten rechts auf <strong>＋</strong> um deinen ersten Gegenstand zu fotografieren.</div></div>`;
   }else{
+    const allCats=[...new Set([...cats,...active.map(i=>i.category)])];
     for(const cat of allCats){
-      const ci=items.filter(i=>i.cat===cat);if(!ci.length)continue;
-      html+=`<div class="cat-label">${esc(cat)}</div>`;
+      const ci=active.filter(i=>(i.category||'')===cat);if(!ci.length)continue;
+      html+=`<div class="cat-label">${esc(cat||'Ohne Kategorie')}</div>`;
       for(const item of ci){
         totalN+=item.neuwert||0;if(item.photo)withPhoto++;
-        const photoEl=item.photo?`<img class="card-photo" src="${item.photo}" alt="">`:`<div class="card-photo-empty">📷</div>`;
-        const priceEl=item._loading
-          ?`<div><div class="spinner" style="margin-top:6px"></div></div>`
-          :item.neuwert
-            ?`<div class="card-neuwert">${fmt(item.neuwert)}</div>
-              <div class="card-neuwert-label">Neuwert</div>
-              ${item.zeitwert?`<div class="card-zeitwert">${fmt(item.zeitwert)} Zeitwert</div>`:''}`
-            :`<div class="card-neuwert" style="color:#854F0B;font-size:12px">fehlt</div>`;
-        const badgeEl=item.neuwert
-          ?(item.fromReceipt?`<span class="badge badge-receipt">🧾 Rechnung</span>`
-            :item.aiFromImage?`<span class="badge badge-img">📷 KI+Bild</span>`
-            :item.aiEstimated?`<span class="badge badge-ai">✦ KI</span>`
-            :`<span class="badge badge-manual">Manuell</span>`)
-          :`<span class="badge badge-missing">Kein Neuwert</span>`;
-        const srcEl=item.source&&item.sourceUrl
-          ?`<a href="${esc(item.sourceUrl)}" target="_blank" class="source-btn">🔗 ${esc(item.source)}</a>`:'';
-        const estBtn=!item.neuwert&&!item._loading
-          ?`<button class="icon-btn" onclick="event.stopPropagation();estimateSingle(${item.id})" title="Neuwert schätzen">✦</button>`:'';
-        html+=`<div class="card" onclick="openEdit(${item.id})">
-          <div class="card-main">${photoEl}
-            <div class="card-info">
-              <div class="card-name">${esc(item.name)}</div>
-              <div class="card-meta">${esc(item.cat)}${item.year?' · '+item.year:''}${item.serial?' · '+esc(item.serial):''}</div>
-            </div>
-            <div class="card-price">${priceEl}</div>
-          </div>
-          <div class="card-footer">${badgeEl}${srcEl}<div class="card-actions">${estBtn}</div></div>
-        </div>`;
+        html+=itemCard(item,false);
       }
     }
   }
-  document.getElementById('list').innerHTML=html;
-  document.getElementById('s-neuwert').textContent=fmt(totalN);
-  document.getElementById('s-items').textContent=items.length;
-  document.getElementById('s-photos').textContent=withPhoto+' mit Foto';
-  document.getElementById('s-empf').textContent=fmt(Math.round(totalN*1.2));
+  $('inventar-list').innerHTML=html;
+  $('s-neuwert').textContent=fmt(totalN);
+  $('s-items').textContent=active.length;
+  $('s-photos').textContent=withPhoto+' mit Foto';
+  $('s-empf').textContent=fmt(Math.round(totalN*1.2));
+}
+function renderArchiv(){
+  const archived=items.filter(i=>i.status==='archived');
+  $('archiv-list').innerHTML=archived.length
+    ?archived.map(i=>itemCard(i,true)).join('')
+    :`<div class="empty"><div class="empty-icon">🗄</div><div>Noch keine archivierten Gegenstände.</div></div>`;
 }
 
-['modal-main','modal-cats','modal-kunden'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)e.target.classList.remove('open');});
-});
-render();
+// ══════ Excel-Export ══════
+$('export-btn').onclick=()=>{
+  const date=new Date().toLocaleDateString('de-DE');
+  const wb=XLSX.utils.book_new();
+  const k=kunden;
+  const kRows=[
+    ['Hausrat-Inventar — Kundendaten',''],['Stand:',date],[],
+    ['Name:',k.name||''],['Adresse:',k.adresse||''],['Telefon:',k.telefon||''],['E-Mail:',k.email||''],[],
+    ['Versicherungsgesellschaft:',k.gesellschaft||''],['Ansprechpartner:',k.ansprechpartner||''],
+    ['Versicherungsnummer:',k.vsnr||''],['Vertragsnummer:',k.vertragsnr||''],
+    ['Vertragsbeginn:',k.beginn||''],['Vertragsende/Laufzeit:',k.ende||''],[],
+    ['Zahlweise:',k.zahlweise||''],['Beitrag (€):',k.beitrag?parseFloat(k.beitrag):''],
+    ['Vereinbarte Versicherungssumme (€):',k.vssumme?parseFloat(k.vssumme):''],
+    ['Selbstbeteiligung (€):',k.sb?parseFloat(k.sb):''],['Zusatzleistungen:',k.zusatz||''],[],
+    ['Notizen:',k.notizen||'']
+  ];
+  const wsK=XLSX.utils.aoa_to_sheet(kRows);wsK['!cols']=[{wch:36},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,wsK,'Kundendaten');
+
+  function invSheet(list,title){
+    const rows=[[title],['Eigentümer: '+(k.name||'—'),'','','','Stand: '+date],[],
+      ['Kategorie','Bezeichnung','Modell/Seriennr.','Kaufjahr','Neuwert (€)','Zeitwert (€)','Notiz']];
+    let totalN=0,totalZ=0;
+    const allCats=[...new Set([...cats,...list.map(i=>i.category)])];
+    for(const cat of allCats){
+      for(const item of list.filter(i=>(i.category||'')===cat)){
+        rows.push([cat,item.name,item.serial||'',item.year||'',item.neuwert||0,item.zeitwert||'',item.note||'']);
+        totalN+=item.neuwert||0;totalZ+=item.zeitwert||0;
+      }
+    }
+    rows.push([],['','GESAMT','','',totalN,totalZ,'']);
+    if(title.includes('Inventar'))rows.push(['','Empf. Versicherungssumme (Neuwert +20 %)','','',Math.round(totalN*1.2),'','']);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:20},{wch:34},{wch:20},{wch:10},{wch:13},{wch:13},{wch:30}];
+    return ws;
+  }
+  XLSX.utils.book_append_sheet(wb,invSheet(items.filter(i=>i.status!=='archived'),'Hausrat-Inventar (aktiv)'),'Inventar');
+  XLSX.utils.book_append_sheet(wb,invSheet(items.filter(i=>i.status==='archived'),'Archiv'),'Archiv');
+
+  XLSX.writeFile(wb,'Hausrat_'+date.replace(/\./g,'-')+'.xlsx');
+};
+
+updateNetStatus();
 </script>
 </body>
 </html>
