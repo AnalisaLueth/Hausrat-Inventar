@@ -151,6 +151,11 @@ input[type=file]{display:none}
 .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 .modal h2{font-size:17px;font-weight:700;margin-bottom:3px}
 .modal-sub{font-size:12.5px;color:var(--text-2);margin-bottom:16px}
+.step-progress{height:4px;background:var(--bg);border-radius:99px;overflow:hidden;margin-bottom:8px}
+.step-progress-bar{height:100%;width:25%;background:var(--accent);border-radius:99px;transition:width .25s ease}
+.step-label{font-size:12.5px;color:var(--text-2);font-weight:600;margin-bottom:16px}
+.step-panel{display:none}
+.step-panel.active{display:block;animation:fadein .15s ease}
 .section-divider{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
 /* ── Category manager ── */
 .cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
@@ -370,25 +375,30 @@ input[type=file]{display:none}
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="item-modal-title">Neuer Gegenstand</h2>
-    <div class="modal-sub">Fotografiere den Gegenstand und trage die Daten ein.</div>
+    <div class="step-progress"><div class="step-progress-bar" id="step-progress-bar"></div></div>
+    <div class="step-label" id="step-label"></div>
 
-    <div class="pic-row">
-      <div id="photo-thumb-wrap">
-        <div class="pic-box-empty" id="photo-pick-btn"><span>📷</span><span>Foto</span></div>
+    <!-- Schritt 1: Foto -->
+    <div class="step-panel" data-step="1">
+      <div class="pic-row">
+        <div id="photo-thumb-wrap">
+          <div class="pic-box-empty" id="photo-pick-btn"><span>📷</span><span>Foto</span></div>
+        </div>
+        <div class="pic-actions">
+          <button class="btn btn-primary" id="cam-btn" type="button">📷 Kamera öffnen</button>
+          <button class="btn btn-sm" id="gal-btn" type="button">🖼 Galerie wählen</button>
+        </div>
       </div>
-      <div class="pic-actions">
-        <button class="btn btn-primary" id="cam-btn" type="button">📷 Kamera öffnen</button>
-        <button class="btn btn-sm" id="gal-btn" type="button">🖼 Galerie wählen</button>
+      <input type="file" id="inp-cam" accept="image/*" capture="environment">
+      <input type="file" id="inp-gal" accept="image/*">
+      <div style="margin:10px 0 4px" id="receipt-chip-wrap">
+        <button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>
       </div>
+      <input type="file" id="inp-receipt" accept="image/*">
     </div>
-    <input type="file" id="inp-cam" accept="image/*" capture="environment">
-    <input type="file" id="inp-gal" accept="image/*">
-    <div style="margin:10px 0 4px" id="receipt-chip-wrap">
-      <button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>
-    </div>
-    <input type="file" id="inp-receipt" accept="image/*">
 
-    <div style="margin-top:14px">
+    <!-- Schritt 2: Bezeichnung + Kategorie -->
+    <div class="step-panel" data-step="2">
       <div class="form-row">
         <label class="form-label">Bezeichnung *</label>
         <div class="input-with-mic">
@@ -396,19 +406,17 @@ input[type=file]{display:none}
           <button type="button" class="mic-btn" id="mic-f-name" title="Diktieren">🎤</button>
         </div>
       </div>
-      <div class="form-grid">
-        <div class="form-row">
-          <label class="form-label">Kategorie</label>
-          <select class="form-input" id="f-cat"></select>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Kaufjahr</label>
-          <input class="form-input" type="number" id="f-year" placeholder="z. B. 2021" min="1970" max="2030">
-        </div>
-      </div>
       <div class="form-row">
-        <label class="form-label">Modell / Seriennr.</label>
-        <input class="form-input" type="text" id="f-serial" placeholder="optional">
+        <label class="form-label">Kategorie</label>
+        <select class="form-input" id="f-cat"></select>
+      </div>
+    </div>
+
+    <!-- Schritt 3: Kaufjahr + Neuwert -->
+    <div class="step-panel" data-step="3">
+      <div class="form-row">
+        <label class="form-label">Kaufjahr</label>
+        <input class="form-input" type="number" id="f-year" placeholder="z. B. 2021" min="1970" max="2030">
       </div>
       <div class="form-row">
         <label class="form-label">Neuwert (€)</label>
@@ -417,6 +425,14 @@ input[type=file]{display:none}
           <button class="btn btn-sm" id="price-search-btn" type="button">🔍 Preis suchen (Google Shopping)</button>
         </div>
         <div id="zeitwert-block"></div>
+      </div>
+    </div>
+
+    <!-- Schritt 4: Details -->
+    <div class="step-panel" data-step="4">
+      <div class="form-row">
+        <label class="form-label">Modell / Seriennr.</label>
+        <input class="form-input" type="text" id="f-serial" placeholder="optional">
       </div>
       <div class="form-row">
         <label class="form-label">Notiz</label>
@@ -428,8 +444,8 @@ input[type=file]{display:none}
     </div>
 
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn" id="item-cancel-btn" style="flex:1">Abbrechen</button>
-      <button class="btn btn-primary" id="item-save-btn" style="flex:2">Speichern ✓</button>
+      <button class="btn" id="item-back-btn" style="flex:1">Abbrechen</button>
+      <button class="btn btn-primary" id="item-next-btn" style="flex:2">Weiter →</button>
     </div>
   </div>
 </div>
@@ -757,6 +773,28 @@ function photoBoxSpinnerHtml(){return `<div class="pic-box-empty"><div class="sp
 function receiptChipEmptyHtml(){return `<button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>`;}
 function receiptChipDoneHtml(){return `<span class="receipt-chip">🧾 Beleg-Foto angehängt</span> <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button">ändern</button>`;}
 
+// ── Schritt-für-Schritt-Erfassung ──
+const STEP_TITLES=['Foto','Bezeichnung','Wert','Details'];
+const TOTAL_STEPS=STEP_TITLES.length;
+let currentStep=1;
+function goToStep(n){
+  currentStep=Math.max(1,Math.min(TOTAL_STEPS,n));
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.toggle('active',parseInt(p.dataset.step)===currentStep));
+  $('step-progress-bar').style.width=Math.round(currentStep/TOTAL_STEPS*100)+'%';
+  $('step-label').textContent=`Schritt ${currentStep} von ${TOTAL_STEPS} — ${STEP_TITLES[currentStep-1]}`;
+  $('item-back-btn').textContent=currentStep===1?'Abbrechen':'← Zurück';
+  $('item-next-btn').textContent=currentStep===TOTAL_STEPS?'Speichern ✓':'Weiter →';
+}
+$('item-back-btn').onclick=()=>{
+  if(currentStep===1)closeItemModal();
+  else goToStep(currentStep-1);
+};
+$('item-next-btn').onclick=()=>{
+  if(currentStep===2&&!fv('f-name')){$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
+  if(currentStep<TOTAL_STEPS)goToStep(currentStep+1);
+  else saveItemHandler();
+};
+
 function resetItemForm(){
   ['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).value='');
   $('zeitwert-block').innerHTML='';
@@ -769,6 +807,7 @@ function resetItemForm(){
 function openAddItem(){
   editId=null;resetItemForm();fillCatSelect();
   $('item-modal-title').textContent='Neuer Gegenstand';
+  goToStep(1);
   $('modal-item').classList.add('open');
   setTimeout(()=>$('inp-cam').click(),150);
 }
@@ -791,10 +830,10 @@ function openEditItem(id){
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }
   updateZeitwertDisplay();
+  goToStep(1);
   $('modal-item').classList.add('open');
 }
 function closeItemModal(){$('modal-item').classList.remove('open');editId=null;}
-$('item-cancel-btn').onclick=closeItemModal;
 $('fab-add').onclick=openAddItem;
 $('modal-item').addEventListener('click',e=>{if(e.target.id==='modal-item')closeItemModal();});
 
@@ -886,10 +925,10 @@ function updateZeitwertDisplay(){
   el.innerHTML=`<div class="zeitwert-info">Zeitwert nach ${alter} Jahr${alter!==1?'en':''}: <strong>${fmt(zw)}</strong> (${pct} %)<br>Hausratversicherung zahlt i. d. R. den Neuwert/Wiederbeschaffungswert.</div>`;
 }
 
-$('item-save-btn').onclick=async()=>{
+async function saveItemHandler(){
   if(!currentUser)return;
   const name=fv('f-name');
-  if(!name){$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
+  if(!name){goToStep(2);$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
   const cat=$('f-cat').value,year=fv('f-year');
   const neuwert=parseFloat($('f-neuwert').value)||0;
   const base={
@@ -909,7 +948,7 @@ $('item-save-btn').onclick=async()=>{
     closeItemModal();
     toast('Gespeichert ✓');
   }catch(err){console.error(err);toast('Fehler beim Speichern.');}
-};
+}
 
 async function archiveItem(id){
   await updateDoc(doc(db,'items',id),{status:'archived',archivedAt:serverTimestamp()});
