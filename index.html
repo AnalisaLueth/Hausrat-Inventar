@@ -833,6 +833,15 @@ function fillKundenForm(){
 }
 
 // ── Kontakte (z. B. Makler oder Sachbearbeiter bei der Gesellschaft) ──
+const contactsPickerSupported='contacts' in navigator && 'select' in navigator.contacts;
+async function pickDeviceContact(){
+  try{
+    const results=await navigator.contacts.select(['name','tel','email'],{multiple:false});
+    if(!results||!results.length)return null;
+    const c=results[0];
+    return{name:(c.name&&c.name[0])||'',tel:(c.tel&&c.tel[0])||'',email:(c.email&&c.email[0])||''};
+  }catch(err){console.error(err);toast('Kontakt-Import fehlgeschlagen.');return null;}
+}
 function contactCardHtml(c){
   const id=c.id||('c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
   return `<div class="contact-card" data-id="${id}">
@@ -841,7 +850,10 @@ function contactCardHtml(c){
         <input type="radio" name="main-contact" value="${id}"${c.isMain?' checked':''}>
         <span>Hauptansprechpartner</span>
       </label>
-      <button type="button" class="icon-btn contact-del" title="Entfernen">✕</button>
+      <div style="display:flex;gap:2px">
+        ${contactsPickerSupported?`<button type="button" class="icon-btn contact-import" title="Aus Kontakten importieren">📇</button>`:''}
+        <button type="button" class="icon-btn contact-del" title="Entfernen">✕</button>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-label">Rolle</label>
@@ -862,6 +874,15 @@ function addContactCard(data){
   wrap.innerHTML=contactCardHtml(data||{});
   const card=wrap.firstElementChild;
   card.querySelector('.contact-del').onclick=()=>card.remove();
+  const importBtn=card.querySelector('.contact-import');
+  if(importBtn)importBtn.onclick=async()=>{
+    const picked=await pickDeviceContact();
+    if(!picked)return;
+    if(picked.name)card.querySelector('.contact-name').value=picked.name;
+    if(picked.tel)card.querySelector('.contact-telefon').value=picked.tel;
+    if(picked.email)card.querySelector('.contact-email').value=picked.email;
+    toast('Kontakt übernommen ✓');
+  };
   $('contact-list').appendChild(card);
 }
 function renderContactList(list){
