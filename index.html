@@ -147,6 +147,7 @@ input[type=file]{display:none}
 .extra-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
 .extra-photo-del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(15,17,20,.6);color:#fff;border:none;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .extra-photo-add{width:64px;height:64px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-3);cursor:pointer;background:var(--surface-2);flex-shrink:0}
+.extra-photo-loading{display:flex;align-items:center;justify-content:center;background:var(--surface-2)}
 /* ── Zeitwert info ── */
 .zeitwert-info{background:var(--warn-bg);border-radius:var(--radius-s);padding:9px 12px;margin-top:6px;font-size:12px;color:var(--warn);line-height:1.5}
 .price-search-row{display:flex;gap:8px;margin-top:2px}
@@ -185,6 +186,12 @@ input[type=file]{display:none}
 .more-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:14px;margin-bottom:12px}
 .more-card .label{font-size:11px;color:var(--text-2);margin-bottom:3px}
 .more-card .value{font-size:14px;font-weight:600}
+.info-disclosure{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:2px 14px;margin-bottom:12px}
+.info-disclosure summary{padding:13px 0;font-size:13.5px;font-weight:600;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.info-disclosure summary::-webkit-details-marker{display:none}
+.info-disclosure summary::after{content:'▾';color:var(--text-3);flex-shrink:0;transition:transform .15s}
+.info-disclosure[open] summary::after{transform:rotate(180deg)}
+.info-disclosure .info-body{font-size:12.5px;color:var(--text-2);line-height:1.6;padding-bottom:14px}
 .toast{position:fixed;left:50%;bottom:calc(88px + var(--safe-b));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:13px;z-index:300;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 </style>
@@ -369,6 +376,14 @@ input[type=file]{display:none}
         <input class="form-input" type="text" id="new-cat-inp" placeholder="Neue Kategorie…" style="flex:1">
         <button class="btn btn-primary" id="cat-add-btn">＋</button>
       </div>
+
+      <div class="section-head"><h2>Info</h2></div>
+      <details class="info-disclosure">
+        <summary>🔒 Wie werden meine Daten &amp; Fotos gespeichert?</summary>
+        <div class="info-body">
+          Alle Angaben und Fotos werden verschlüsselt (HTTPS) an eine Cloud-Datenbank von Google (Firebase) übertragen und dort gespeichert. Zugriff hat nur dein eigenes, passwortgeschütztes Konto — andere Nutzer der App sehen deine Daten nie. Fotos werden komprimiert direkt zusammen mit den Angaben zum Gegenstand gespeichert, statt in einem separaten Datei-Dienst — dadurch bleibt die App vollständig kostenlos. Beim Excel-Export wird zusätzlich eine Datei lokal auf deinem Gerät gespeichert.
+        </div>
+      </details>
     </section>
   </main>
 
@@ -849,12 +864,16 @@ $('delete-item-btn').onclick=async()=>{
 // ── Weitere Bilder (Titelbild + bis zu 3 zusätzliche, nicht im Excel-Export) ──
 const MAX_EXTRA_PHOTOS=3;
 let pendingExtraPhotos=[];
+let extraPhotosProcessing=0;
 function renderExtraPhotos(){
   const row=$('extra-photos-row');
   let html=pendingExtraPhotos.map((src,i)=>
     `<div class="extra-photo-thumb"><img src="${src}"><button type="button" class="extra-photo-del" data-i="${i}">✕</button></div>`
   ).join('');
-  if(pendingExtraPhotos.length<MAX_EXTRA_PHOTOS)html+=`<div class="extra-photo-add" id="extra-photo-add-btn">＋</div>`;
+  for(let i=0;i<extraPhotosProcessing;i++){
+    html+=`<div class="extra-photo-thumb extra-photo-loading"><div class="spin" style="width:16px;height:16px;border-width:2px"></div></div>`;
+  }
+  if(pendingExtraPhotos.length+extraPhotosProcessing<MAX_EXTRA_PHOTOS)html+=`<div class="extra-photo-add" id="extra-photo-add-btn">＋</div>`;
   row.innerHTML=html;
   row.querySelectorAll('.extra-photo-thumb img').forEach((img,i)=>{
     img.onclick=()=>openImageViewer(pendingExtraPhotos[i]);
@@ -866,13 +885,19 @@ function renderExtraPhotos(){
   if(addBtn)addBtn.onclick=()=>$('inp-extra').click();
 }
 $('inp-extra').addEventListener('change',async e=>{
-  const files=[...e.target.files].slice(0,MAX_EXTRA_PHOTOS-pendingExtraPhotos.length);
+  const remaining=MAX_EXTRA_PHOTOS-pendingExtraPhotos.length;
+  const files=[...e.target.files];
   e.target.value='';
-  for(const f of files){
+  if(!files.length)return;
+  if(files.length>remaining)toast(`Nur noch ${remaining} weitere${remaining===1?'s':''} Bild${remaining===1?'':'er'} möglich (max. ${MAX_EXTRA_PHOTOS}).`);
+  const toProcess=files.slice(0,remaining);
+  if(!toProcess.length)return;
+  extraPhotosProcessing=toProcess.length;renderExtraPhotos();
+  for(const f of toProcess){
     try{pendingExtraPhotos.push(await compressToLimit(f,140000));}
     catch(err){console.error(err);toast('Ein Bild konnte nicht verarbeitet werden.');}
+    extraPhotosProcessing--;renderExtraPhotos();
   }
-  renderExtraPhotos();
 });
 
 function resetItemForm(){
