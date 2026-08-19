@@ -127,6 +127,13 @@ input,select,textarea,button{font-family:inherit;color:inherit}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239DA1A8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 input[type=file]{display:none}
+/* ── Spracheingabe ── */
+.input-with-mic{display:flex;gap:8px;align-items:flex-start}
+.input-with-mic .form-input{flex:1}
+.mic-btn{width:44px;height:44px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text-2);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.mic-btn:active{background:var(--bg)}
+.mic-btn.listening{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-bg);animation:mic-pulse 1.1s ease-in-out infinite}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(214,69,69,.35)}50%{box-shadow:0 0 0 8px rgba(214,69,69,0)}}
 /* ── Photo/Beleg picker ── */
 .pic-row{display:flex;gap:10px;align-items:center;margin-bottom:4px}
 .pic-box{width:78px;height:78px;border-radius:12px;object-fit:cover;border:0.5px solid var(--border);flex-shrink:0;cursor:pointer}
@@ -384,7 +391,10 @@ input[type=file]{display:none}
     <div style="margin-top:14px">
       <div class="form-row">
         <label class="form-label">Bezeichnung *</label>
-        <input class="form-input" type="text" id="f-name" placeholder="z. B. Sofa, Fernseher, Fahrrad…">
+        <div class="input-with-mic">
+          <input class="form-input" type="text" id="f-name" placeholder="z. B. Sofa, Fernseher, Fahrrad…">
+          <button type="button" class="mic-btn" id="mic-f-name" title="Diktieren">🎤</button>
+        </div>
       </div>
       <div class="form-grid">
         <div class="form-row">
@@ -410,7 +420,10 @@ input[type=file]{display:none}
       </div>
       <div class="form-row">
         <label class="form-label">Notiz</label>
-        <textarea class="form-input" id="f-note" rows="2" placeholder="z. B. Zustand, Besonderheiten…" style="resize:vertical"></textarea>
+        <div class="input-with-mic">
+          <textarea class="form-input" id="f-note" rows="2" placeholder="z. B. Zustand, Besonderheiten…" style="resize:vertical"></textarea>
+          <button type="button" class="mic-btn" id="mic-f-note" title="Diktieren">🎤</button>
+        </div>
       </div>
     </div>
 
@@ -818,6 +831,39 @@ $('price-search-btn').onclick=()=>{
   const q=encodeURIComponent(name+(serial?' '+serial:''));
   window.open('https://www.google.com/search?tbm=shop&q='+q,'_blank','noopener');
 };
+
+// ══════ Spracheingabe (Diktieren) — nutzt die browsereigene Web Speech API, kostenlos ══════
+// Unterstützt in Chrome/Edge/Android; in Safari/iOS (noch) nicht verfügbar — Button wird dort ausgeblendet.
+const SpeechRecognitionCtor=window.SpeechRecognition||window.webkitSpeechRecognition;
+function setupMicButton(btnId,fieldId){
+  const btn=$(btnId);
+  if(!SpeechRecognitionCtor){btn.style.display='none';return;}
+  let recognition=null,listening=false;
+  btn.onclick=()=>{
+    if(listening){recognition&&recognition.stop();return;}
+    recognition=new SpeechRecognitionCtor();
+    recognition.lang='de-DE';
+    recognition.interimResults=false;
+    recognition.maxAlternatives=1;
+    recognition.onstart=()=>{listening=true;btn.classList.add('listening');};
+    recognition.onend=()=>{listening=false;btn.classList.remove('listening');};
+    recognition.onerror=(e)=>{
+      listening=false;btn.classList.remove('listening');
+      if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Mikrofon-Zugriff wurde nicht erlaubt.');
+      else if(e.error==='no-speech')toast('Nichts verstanden — bitte erneut versuchen.');
+      else toast('Spracherkennung fehlgeschlagen.');
+    };
+    recognition.onresult=(e)=>{
+      const text=e.results[0][0].transcript;
+      const field=$(fieldId);
+      field.value=field.value.trim()?field.value.trim()+' '+text:text;
+      if(fieldId==='f-name')updateZeitwertDisplay();
+    };
+    recognition.start();
+  };
+}
+setupMicButton('mic-f-name','f-name');
+setupMicButton('mic-f-note','f-note');
 ['f-year','f-neuwert','f-cat'].forEach(id=>$(id).addEventListener('input',updateZeitwertDisplay));
 $('f-cat').addEventListener('change',updateZeitwertDisplay);
 function updateZeitwertDisplay(){
