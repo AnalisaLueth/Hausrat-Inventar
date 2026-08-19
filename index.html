@@ -141,6 +141,12 @@ input[type=file]{display:none}
 .pic-box-empty span{font-size:10px}
 .pic-actions{display:flex;flex-direction:column;gap:6px;flex:1}
 .receipt-chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-2);color:var(--accent-dark);padding:6px 11px;border-radius:99px;font-size:12.5px;cursor:pointer;border:none}
+/* ── Weitere Bilder ── */
+.extra-photos-row{display:flex;gap:8px;flex-wrap:wrap}
+.extra-photo-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:0.5px solid var(--border);flex-shrink:0}
+.extra-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.extra-photo-del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(15,17,20,.6);color:#fff;border:none;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.extra-photo-add{width:64px;height:64px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-3);cursor:pointer;background:var(--surface-2);flex-shrink:0}
 /* ── Zeitwert info ── */
 .zeitwert-info{background:var(--warn-bg);border-radius:var(--radius-s);padding:9px 12px;margin-top:6px;font-size:12px;color:var(--warn);line-height:1.5}
 .price-search-row{display:flex;gap:8px;margin-top:2px}
@@ -375,10 +381,10 @@ input[type=file]{display:none}
   <div class="modal">
     <div class="modal-handle"></div>
     <h2 id="item-modal-title">Neuer Gegenstand</h2>
-    <div class="step-progress"><div class="step-progress-bar" id="step-progress-bar"></div></div>
+    <div class="step-progress" id="step-progress"><div class="step-progress-bar" id="step-progress-bar"></div></div>
     <div class="step-label" id="step-label"></div>
 
-    <!-- Schritt 1: Foto -->
+    <!-- Schritt 1: Titelbild -->
     <div class="step-panel" data-step="1">
       <div class="pic-row">
         <div id="photo-thumb-wrap">
@@ -441,12 +447,18 @@ input[type=file]{display:none}
           <button type="button" class="mic-btn" id="mic-f-note" title="Diktieren">🎤</button>
         </div>
       </div>
+      <div class="form-row">
+        <label class="form-label">Weitere Bilder <span style="font-weight:400;color:var(--text-3)">(optional, z. B. Rückseite, Seriennr. — erscheinen nicht im Excel-Export)</span></label>
+        <div class="extra-photos-row" id="extra-photos-row"></div>
+        <input type="file" id="inp-extra" accept="image/*" multiple>
+      </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn" id="item-back-btn" style="flex:1">Abbrechen</button>
       <button class="btn btn-primary" id="item-next-btn" style="flex:2">Weiter →</button>
     </div>
+    <button class="btn btn-danger btn-block hidden" id="delete-item-btn" type="button" style="margin-top:10px">🗑 Gegenstand endgültig löschen</button>
   </div>
 </div>
 
@@ -460,7 +472,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-  collection, doc, addDoc, updateDoc, setDoc, onSnapshot,
+  collection, doc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
   query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -773,27 +785,78 @@ function photoBoxSpinnerHtml(){return `<div class="pic-box-empty"><div class="sp
 function receiptChipEmptyHtml(){return `<button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>`;}
 function receiptChipDoneHtml(){return `<span class="receipt-chip">🧾 Beleg-Foto angehängt</span> <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button">ändern</button>`;}
 
-// ── Schritt-für-Schritt-Erfassung ──
-const STEP_TITLES=['Foto','Bezeichnung','Wert','Details'];
+// ── Schritt-für-Schritt-Erfassung (nur beim Neuanlegen; beim Bearbeiten alle Felder auf einmal) ──
+const STEP_TITLES=['Titelbild','Bezeichnung','Wert','Details'];
 const TOTAL_STEPS=STEP_TITLES.length;
 let currentStep=1;
+let wizardMode=true;
 function goToStep(n){
-  currentStep=Math.max(1,Math.min(TOTAL_STEPS,n));
-  document.querySelectorAll('.step-panel').forEach(p=>p.classList.toggle('active',parseInt(p.dataset.step)===currentStep));
-  $('step-progress-bar').style.width=Math.round(currentStep/TOTAL_STEPS*100)+'%';
-  $('step-label').textContent=`Schritt ${currentStep} von ${TOTAL_STEPS} — ${STEP_TITLES[currentStep-1]}`;
-  $('item-back-btn').textContent=currentStep===1?'Abbrechen':'← Zurück';
-  $('item-next-btn').textContent=currentStep===TOTAL_STEPS?'Speichern ✓':'Weiter →';
+  if(wizardMode){
+    currentStep=Math.max(1,Math.min(TOTAL_STEPS,n));
+    document.querySelectorAll('.step-panel').forEach(p=>p.classList.toggle('active',parseInt(p.dataset.step)===currentStep));
+    $('step-progress').style.display='';
+    $('step-label').style.display='';
+    $('step-progress-bar').style.width=Math.round(currentStep/TOTAL_STEPS*100)+'%';
+    $('step-label').textContent=`Schritt ${currentStep} von ${TOTAL_STEPS} — ${STEP_TITLES[currentStep-1]}`;
+    $('item-back-btn').textContent=currentStep===1?'Abbrechen':'← Zurück';
+    $('item-next-btn').textContent=currentStep===TOTAL_STEPS?'Speichern ✓':'Weiter →';
+  }else{
+    document.querySelectorAll('.step-panel').forEach(p=>p.classList.add('active'));
+    $('step-progress').style.display='none';
+    $('step-label').style.display='none';
+    $('item-back-btn').textContent='Abbrechen';
+    $('item-next-btn').textContent='Speichern ✓';
+  }
+  $('delete-item-btn').classList.toggle('hidden',wizardMode||!editId);
 }
 $('item-back-btn').onclick=()=>{
-  if(currentStep===1)closeItemModal();
-  else goToStep(currentStep-1);
+  if(wizardMode&&currentStep>1){goToStep(currentStep-1);return;}
+  closeItemModal();
 };
 $('item-next-btn').onclick=()=>{
-  if(currentStep===2&&!fv('f-name')){$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
-  if(currentStep<TOTAL_STEPS)goToStep(currentStep+1);
-  else saveItemHandler();
+  if(wizardMode){
+    if(currentStep===2&&!fv('f-name')){$('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;}
+    if(currentStep<TOTAL_STEPS){goToStep(currentStep+1);return;}
+  }else if(!fv('f-name')){
+    $('f-name').focus();toast('Bitte eine Bezeichnung eingeben.');return;
+  }
+  saveItemHandler();
 };
+$('delete-item-btn').onclick=async()=>{
+  if(!editId)return;
+  if(!confirm('Diesen Gegenstand wirklich endgültig löschen? Das kann nicht rückgängig gemacht werden.'))return;
+  try{
+    await deleteDoc(doc(db,'items',editId));
+    closeItemModal();
+    toast('Gegenstand gelöscht.');
+  }catch(err){console.error(err);toast('Löschen fehlgeschlagen.');}
+};
+
+// ── Weitere Bilder (Titelbild + bis zu 3 zusätzliche, nicht im Excel-Export) ──
+const MAX_EXTRA_PHOTOS=3;
+let pendingExtraPhotos=[];
+function renderExtraPhotos(){
+  const row=$('extra-photos-row');
+  let html=pendingExtraPhotos.map((src,i)=>
+    `<div class="extra-photo-thumb"><img src="${src}"><button type="button" class="extra-photo-del" data-i="${i}">✕</button></div>`
+  ).join('');
+  if(pendingExtraPhotos.length<MAX_EXTRA_PHOTOS)html+=`<div class="extra-photo-add" id="extra-photo-add-btn">＋</div>`;
+  row.innerHTML=html;
+  row.querySelectorAll('.extra-photo-del').forEach(btn=>{
+    btn.onclick=()=>{pendingExtraPhotos.splice(parseInt(btn.dataset.i),1);renderExtraPhotos();};
+  });
+  const addBtn=$('extra-photo-add-btn');
+  if(addBtn)addBtn.onclick=()=>$('inp-extra').click();
+}
+$('inp-extra').addEventListener('change',async e=>{
+  const files=[...e.target.files].slice(0,MAX_EXTRA_PHOTOS-pendingExtraPhotos.length);
+  e.target.value='';
+  for(const f of files){
+    try{pendingExtraPhotos.push(await compressToLimit(f,140000));}
+    catch(err){console.error(err);toast('Ein Bild konnte nicht verarbeitet werden.');}
+  }
+  renderExtraPhotos();
+});
 
 function resetItemForm(){
   ['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).value='');
@@ -803,9 +866,10 @@ function resetItemForm(){
   $('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();
   $('receipt-pick-btn').onclick=()=>$('inp-receipt').click();
   pendingPhotoData=null;pendingReceiptData=null;
+  pendingExtraPhotos=[];renderExtraPhotos();
 }
 function openAddItem(){
-  editId=null;resetItemForm();fillCatSelect();
+  editId=null;wizardMode=true;resetItemForm();fillCatSelect();
   $('item-modal-title').textContent='Neuer Gegenstand';
   goToStep(1);
   $('modal-item').classList.add('open');
@@ -813,7 +877,7 @@ function openAddItem(){
 }
 function openEditItem(id){
   const item=items.find(i=>i.id===id);if(!item)return;
-  editId=id;resetItemForm();fillCatSelect(item.category);
+  editId=id;wizardMode=false;resetItemForm();fillCatSelect(item.category);
   $('item-modal-title').textContent='Bearbeiten';
   $('f-name').value=item.name||'';
   $('f-year').value=item.year||'';
@@ -829,6 +893,7 @@ function openEditItem(id){
       <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button" style="margin-left:6px">ändern</button>`;
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }
+  pendingExtraPhotos=[...(item.extraPhotos||[])];renderExtraPhotos();
   updateZeitwertDisplay();
   goToStep(1);
   $('modal-item').classList.add('open');
@@ -845,7 +910,7 @@ async function onPhotoFile(e){
   e.target.value='';
   $('photo-thumb-wrap').innerHTML=photoBoxSpinnerHtml();
   try{
-    pendingPhotoData=await compressToLimit(f,500000);
+    pendingPhotoData=await compressToLimit(f,320000);
     $('photo-thumb-wrap').innerHTML=`<img src="${pendingPhotoData}" class="pic-box" id="photo-pick-btn">`;
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   }catch(err){console.error(err);toast('Foto konnte nicht verarbeitet werden.');$('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();$('photo-pick-btn').onclick=()=>$('inp-cam').click();}
@@ -857,7 +922,7 @@ $('inp-receipt').addEventListener('change',async e=>{
   e.target.value='';
   $('receipt-chip-wrap').innerHTML=`<span class="receipt-chip">⏳ wird verarbeitet…</span>`;
   try{
-    pendingReceiptData=await compressToLimit(f,280000);
+    pendingReceiptData=await compressToLimit(f,140000);
     $('receipt-chip-wrap').innerHTML=receiptChipDoneHtml();
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }catch(err){console.error(err);toast('Beleg konnte nicht verarbeitet werden.');$('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();$('receipt-pick-btn').onclick=()=>$('inp-receipt').click();}
@@ -938,6 +1003,7 @@ async function saveItemHandler(){
   };
   if(pendingPhotoData)base.photo=pendingPhotoData;
   if(pendingReceiptData)base.receipt=pendingReceiptData;
+  base.extraPhotos=pendingExtraPhotos;
   try{
     if(editId){
       await updateDoc(doc(db,'items',editId),base);
