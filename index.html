@@ -640,6 +640,8 @@ let unsubItems=null, unsubKunden=null, unsubCats=null;
 let currentTab='inventar';
 let editId=null;
 let pendingPhotoData=null, pendingReceiptData=null;
+let itemFormDirty=false;
+function markItemDirty(){itemFormDirty=true;}
 
 function toast(msg){
   const t=$('toast');t.textContent=msg;t.classList.add('show');
@@ -830,9 +832,13 @@ $('cat-add-btn').onclick=()=>{
 // ══════ Kundendaten ══════
 const K_FIELDS=['name','adresse','telefon','email','gesellschaft',
   'vsnr','vertragsnr','beginn','ende','zahlweise','beitrag','vssumme','sb','zusatz','notizen'];
+let kundenFormDirty=false;
+K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)el.addEventListener('input',()=>{kundenFormDirty=true;});});
+$('contact-list').addEventListener('input',()=>{kundenFormDirty=true;});
 function fillKundenForm(){
   K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)el.value=kunden[f]||'';});
   renderContactList(kunden.contacts||[]);
+  kundenFormDirty=false;
 }
 
 // ── Kontakte (z. B. Makler oder Sachbearbeiter bei der Gesellschaft) ──
@@ -877,7 +883,7 @@ function addContactCard(data){
   const wrap=document.createElement('div');
   wrap.innerHTML=contactCardHtml(data||{});
   const card=wrap.firstElementChild;
-  card.querySelector('.contact-del').onclick=()=>card.remove();
+  card.querySelector('.contact-del').onclick=()=>{card.remove();kundenFormDirty=true;};
   const importBtn=card.querySelector('.contact-import');
   if(importBtn)importBtn.onclick=async()=>{
     const picked=await pickDeviceContact();
@@ -893,7 +899,7 @@ function renderContactList(list){
   $('contact-list').innerHTML='';
   (list||[]).forEach(c=>addContactCard(c));
 }
-$('contact-add-btn').onclick=()=>addContactCard({});
+$('contact-add-btn').onclick=()=>{addContactCard({});kundenFormDirty=true;};
 function readContacts(){
   const mainId=document.querySelector('input[name="main-contact"]:checked')?.value||null;
   return [...document.querySelectorAll('.contact-card')].map(card=>({
@@ -954,7 +960,7 @@ function goToStep(n){
 }
 $('item-back-btn').onclick=()=>{
   if(wizardMode&&currentStep>1){goToStep(currentStep-1);return;}
-  closeItemModal();
+  requestCloseItemModal();
 };
 $('item-next-btn').onclick=()=>{
   if(wizardMode){
@@ -1010,7 +1016,7 @@ $('inp-extra').addEventListener('change',async e=>{
     const edited=await editImage(f);
     if(!edited)continue;
     extraPhotosProcessing=1;renderExtraPhotos();
-    try{pendingExtraPhotos.push(await compressToLimit(edited,140000));}
+    try{pendingExtraPhotos.push(await compressToLimit(edited,140000));markItemDirty();}
     catch(err){console.error(err);toast('Ein Bild konnte nicht verarbeitet werden.');}
     extraPhotosProcessing=0;renderExtraPhotos();
   }
@@ -1020,6 +1026,7 @@ function resetItemForm(){
   ['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).value='');
   $('zeitwert-block').innerHTML='';
   catManuallySet=false;
+  itemFormDirty=false;
   $('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();
   $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   $('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();
@@ -1066,8 +1073,12 @@ function openEditItem(id){
   $('modal-item').classList.add('open');
 }
 function closeItemModal(){$('modal-item').classList.remove('open');editId=null;}
+function requestCloseItemModal(){
+  if(itemFormDirty&&!confirm('Eingaben verwerfen? Der Gegenstand wurde noch nicht gespeichert.'))return;
+  closeItemModal();
+}
 $('fab-add').onclick=openAddItem;
-$('modal-item').addEventListener('click',e=>{if(e.target.id==='modal-item')closeItemModal();});
+$('modal-item').addEventListener('click',e=>{if(e.target.id==='modal-item')requestCloseItemModal();});
 
 // ── Bild-Viewer (statt Browser-Tab — data:-URLs als Vollbild-Navigation lassen mobile Browser oft hängen) ──
 function openImageViewer(src){
@@ -1125,6 +1136,7 @@ async function onPhotoFile(e){
   $('photo-thumb-wrap').innerHTML=photoBoxSpinnerHtml();
   try{
     pendingPhotoData=await compressToLimit(edited,320000);
+    markItemDirty();
     $('photo-thumb-wrap').innerHTML=`<img src="${pendingPhotoData}" class="pic-box" id="photo-pick-btn">`;
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   }catch(err){console.error(err);toast('Foto konnte nicht verarbeitet werden.');$('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();$('photo-pick-btn').onclick=()=>$('inp-cam').click();}
@@ -1139,6 +1151,7 @@ $('inp-receipt').addEventListener('change',async e=>{
   $('receipt-chip-wrap').innerHTML=`<span class="receipt-chip">⏳ wird verarbeitet…</span>`;
   try{
     pendingReceiptData=await compressToLimit(edited,140000);
+    markItemDirty();
     $('receipt-chip-wrap').innerHTML=receiptChipDoneHtml();
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }catch(err){console.error(err);toast('Beleg konnte nicht verarbeitet werden.');$('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();$('receipt-pick-btn').onclick=()=>$('inp-receipt').click();}
@@ -1195,6 +1208,8 @@ setupMicButton('mic-f-name','f-name');
 setupMicButton('mic-f-note','f-note');
 ['f-year','f-neuwert','f-cat'].forEach(id=>$(id).addEventListener('input',updateZeitwertDisplay));
 $('f-cat').addEventListener('change',updateZeitwertDisplay);
+['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).addEventListener('input',markItemDirty));
+$('f-cat').addEventListener('change',markItemDirty);
 function updateZeitwertDisplay(){
   const neuwert=parseFloat($('f-neuwert').value)||0;
   const year=fv('f-year'),cat=$('f-cat').value;
@@ -1348,6 +1363,12 @@ $('export-btn').onclick=()=>{
 
   XLSX.writeFile(wb,'Hausrat_'+date.replace(/\./g,'-')+'.xlsx');
 };
+
+// ══════ Warnung vor Verlassen der Seite bei ungespeicherten Eingaben ══════
+window.addEventListener('beforeunload',e=>{
+  const itemDirtyAndOpen=itemFormDirty&&$('modal-item').classList.contains('open');
+  if(itemDirtyAndOpen||kundenFormDirty){e.preventDefault();e.returnValue='';}
+});
 
 updateNetStatus();
 </script>
