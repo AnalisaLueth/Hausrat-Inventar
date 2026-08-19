@@ -144,7 +144,7 @@ input[type=file]{display:none}
 /* ── Weitere Bilder ── */
 .extra-photos-row{display:flex;gap:8px;flex-wrap:wrap}
 .extra-photo-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:0.5px solid var(--border);flex-shrink:0}
-.extra-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.extra-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
 .extra-photo-del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(15,17,20,.6);color:#fff;border:none;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .extra-photo-add{width:64px;height:64px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-3);cursor:pointer;background:var(--surface-2);flex-shrink:0}
 /* ── Zeitwert info ── */
@@ -163,6 +163,12 @@ input[type=file]{display:none}
 .step-panel{display:none}
 .step-panel.active{display:block;animation:fadein .15s ease}
 .section-divider{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+/* ── Bild-Viewer ── */
+.modal-bg.viewer{align-items:center;background:rgba(6,7,8,.92)}
+.image-viewer-inner{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+.image-viewer-inner img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+.image-viewer-close{position:absolute;top:16px;right:16px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10}
+.image-viewer-close:active{background:rgba(255,255,255,.3)}
 /* ── Category manager ── */
 .cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .cat-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-s)}
@@ -459,6 +465,14 @@ input[type=file]{display:none}
       <button class="btn btn-primary" id="item-next-btn" style="flex:2">Weiter →</button>
     </div>
     <button class="btn btn-danger btn-block hidden" id="delete-item-btn" type="button" style="margin-top:10px">🗑 Gegenstand endgültig löschen</button>
+  </div>
+</div>
+
+<!-- ══════ BILD-VIEWER ══════ -->
+<div class="modal-bg viewer" id="modal-image-viewer">
+  <div class="image-viewer-inner">
+    <button class="image-viewer-close" id="image-viewer-close" type="button">✕</button>
+    <img id="image-viewer-img" src="" alt="">
   </div>
 </div>
 
@@ -842,6 +856,9 @@ function renderExtraPhotos(){
   ).join('');
   if(pendingExtraPhotos.length<MAX_EXTRA_PHOTOS)html+=`<div class="extra-photo-add" id="extra-photo-add-btn">＋</div>`;
   row.innerHTML=html;
+  row.querySelectorAll('.extra-photo-thumb img').forEach((img,i)=>{
+    img.onclick=()=>openImageViewer(pendingExtraPhotos[i]);
+  });
   row.querySelectorAll('.extra-photo-del').forEach(btn=>{
     btn.onclick=()=>{pendingExtraPhotos.splice(parseInt(btn.dataset.i),1);renderExtraPhotos();};
   });
@@ -889,8 +906,9 @@ function openEditItem(id){
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   }
   if(item.receipt){
-    $('receipt-chip-wrap').innerHTML=`<a class="receipt-chip" href="${item.receipt}" target="_blank">🧾 Beleg ansehen</a>
+    $('receipt-chip-wrap').innerHTML=`<button type="button" class="receipt-chip" id="receipt-view-btn">🧾 Beleg ansehen</button>
       <button class="btn btn-sm btn-ghost" id="receipt-replace-btn" type="button" style="margin-left:6px">ändern</button>`;
+    $('receipt-view-btn').onclick=()=>openImageViewer(item.receipt);
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }
   pendingExtraPhotos=[...(item.extraPhotos||[])];renderExtraPhotos();
@@ -901,6 +919,18 @@ function openEditItem(id){
 function closeItemModal(){$('modal-item').classList.remove('open');editId=null;}
 $('fab-add').onclick=openAddItem;
 $('modal-item').addEventListener('click',e=>{if(e.target.id==='modal-item')closeItemModal();});
+
+// ── Bild-Viewer (statt Browser-Tab — data:-URLs als Vollbild-Navigation lassen mobile Browser oft hängen) ──
+function openImageViewer(src){
+  $('image-viewer-img').src=src;
+  $('modal-image-viewer').classList.add('open');
+}
+function closeImageViewer(){
+  $('modal-image-viewer').classList.remove('open');
+  $('image-viewer-img').src='';
+}
+$('image-viewer-close').onclick=closeImageViewer;
+$('modal-image-viewer').addEventListener('click',e=>{if(e.target.id==='modal-image-viewer')closeImageViewer();});
 
 $('cam-btn').onclick=()=>$('inp-cam').click();
 $('gal-btn').onclick=()=>$('inp-gal').click();
