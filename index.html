@@ -197,6 +197,7 @@ input[type=file]{display:none}
 .contact-radio{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
 .contact-radio input{accent-color:var(--accent);width:16px;height:16px}
 .contact-radio:has(input:checked){color:var(--accent)}
+.contact-import-note{background:var(--accent-2);color:var(--accent-dark);font-size:12px;padding:9px 12px;border-radius:var(--radius-s);margin-bottom:12px;line-height:1.5}
 /* ── More tab / account ── */
 .more-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:14px;margin-bottom:12px}
 .more-card .label{font-size:11px;color:var(--text-2);margin-bottom:3px}
@@ -310,6 +311,7 @@ input[type=file]{display:none}
         <h2>Kontakte</h2>
       </div>
       <div class="modal-sub" style="margin-bottom:10px">Versicherung direkt oder über einen Makler abgeschlossen? Beliebig viele Kontakte anlegen und einen als Hauptansprechpartner markieren.</div>
+      <div class="contact-import-note hidden" id="contact-import-note">📇 Tipp: In Chrome (Android) kannst du Kontakte per Klick direkt aus deinem Adressbuch importieren. Samsung Internet und iPhone unterstützen das leider nicht — dort bitte manuell eintragen.</div>
       <div id="contact-list"></div>
       <button class="btn btn-block" id="contact-add-btn" type="button" style="margin-bottom:16px">＋ Kontakt hinzufügen</button>
 
@@ -834,6 +836,7 @@ function fillKundenForm(){
 
 // ── Kontakte (z. B. Makler oder Sachbearbeiter bei der Gesellschaft) ──
 const contactsPickerSupported='contacts' in navigator && 'select' in navigator.contacts;
+if(!contactsPickerSupported)$('contact-import-note').classList.remove('hidden');
 async function pickDeviceContact(){
   try{
     const results=await navigator.contacts.select(['name','tel','email'],{multiple:false});
