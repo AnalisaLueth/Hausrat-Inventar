@@ -800,7 +800,8 @@ document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>switchTab(b.datas
 // ══════ Kategorien ══════
 function fillCatSelect(val){
   const sel=$('f-cat');
-  sel.innerHTML=cats.map(c=>`<option${c===val?' selected':''}>${esc(c)}</option>`).join('');
+  sel.innerHTML='<option value=""'+(val?'':' selected')+'>— Kategorie wählen —</option>'
+    +cats.map(c=>`<option${c===val?' selected':''}>${esc(c)}</option>`).join('');
 }
 function renderCatList(){
   $('cat-list').innerHTML=cats.map((c,i)=>`
