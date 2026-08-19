@@ -167,6 +167,10 @@ input[type=file]{display:none}
 .step-panel{display:none}
 .step-panel.active{display:block;animation:fadein .15s ease}
 .section-divider{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+/* ── Foto-Tipps (Onboarding) ── */
+.onboarding-tips{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.onboarding-tip{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:var(--text-2);line-height:1.5}
+.onboarding-tip-ic{font-size:22px;flex-shrink:0}
 /* ── Bild-Viewer ── */
 .modal-bg.viewer{align-items:center;background:rgba(6,7,8,.92)}
 .image-viewer-inner{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -390,11 +394,18 @@ input[type=file]{display:none}
 
       <div class="section-head"><h2>Info</h2></div>
       <details class="info-disclosure">
+        <summary>📦 Was zählt als Hausrat &amp; ab wann lohnt sich die Erfassung?</summary>
+        <div class="info-body">
+          Zum Hausrat zählt grundsätzlich alles Bewegliche, das dir gehört — Möbel, Elektronik, Kleidung, Schmuck, Geschirr, Werkzeug, Sportausrüstung usw. Fest verbaute Dinge (z. B. Einbauküche, Bodenbeläge) gehören meist zur Gebäudeversicherung, nicht zum Hausrat. Als grobe Orientierung: Einzelne Gegenstände ab etwa 500–1.000&nbsp;€ lohnt es sich, einzeln zu fotografieren und zu dokumentieren — kleinere Alltagsgegenstände lassen sich pauschal je Kategorie schätzen. Im Zweifel lieber einmal mehr fotografieren, das schadet nicht. (Allgemeiner Anhaltspunkt, keine verbindliche Versicherungsberatung — im Zweifel bei deinem Versicherer/Makler nachfragen.)
+        </div>
+      </details>
+      <details class="info-disclosure">
         <summary>🔒 Wie werden meine Daten &amp; Fotos gespeichert?</summary>
         <div class="info-body">
           Alle Angaben und Fotos werden verschlüsselt (HTTPS) an eine Cloud-Datenbank von Google (Firebase) übertragen und dort gespeichert. Zugriff hat nur dein eigenes, passwortgeschütztes Konto — andere Nutzer der App sehen deine Daten nie. Fotos werden komprimiert direkt zusammen mit den Angaben zum Gegenstand gespeichert, statt in einem separaten Datei-Dienst — dadurch bleibt die App vollständig kostenlos. Beim Excel-Export wird zusätzlich eine Datei lokal auf deinem Gerät gespeichert.
         </div>
       </details>
+      <button class="btn btn-block" id="reopen-onboarding-btn" type="button">📸 Foto-Tipps erneut anzeigen</button>
     </section>
   </main>
 
@@ -495,6 +506,22 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<!-- ══════ FOTO-TIPPS (einmalig nach Anmeldung) ══════ -->
+<div class="modal-bg" id="modal-onboarding">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>📸 Bevor es losgeht: Tipps zum Fotografieren</h2>
+    <div class="modal-sub">Damit deine Dokumentation der Versicherung wirklich weiterhilft.</div>
+    <div class="onboarding-tips">
+      <div class="onboarding-tip"><span class="onboarding-tip-ic">🖼</span><div>Gegenstand vollständig und gut beleuchtet ablichten, nicht nur einen Ausschnitt.</div></div>
+      <div class="onboarding-tip"><span class="onboarding-tip-ic">🔍</span><div>Bei Wertgegenständen: Modell-/Seriennummer als zusätzliches Bild festhalten.</div></div>
+      <div class="onboarding-tip"><span class="onboarding-tip-ic">🙈</span><div>Auf den Hintergrund achten — private Dinge lassen sich direkt beim Fotografieren zuschneiden.</div></div>
+      <div class="onboarding-tip"><span class="onboarding-tip-ic">🧾</span><div>Kaufbeleg vorhanden? Gleich mit anhängen — hilft bei der Wertermittlung.</div></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="onboarding-close-btn">Verstanden, los geht's ✓</button>
+  </div>
+</div>
+
 <!-- ══════ BILD-VIEWER ══════ -->
 <div class="modal-bg viewer" id="modal-image-viewer">
   <div class="image-viewer-inner">
@@ -563,6 +590,24 @@ const AFA = {
   'Sonstiges':{p:0.10,jahre:10}
 };
 const DEFAULT_CATS = Object.keys(AFA);
+
+// ══════ Automatische Kategorie-Zuordnung anhand von Stichwörtern in der Bezeichnung ══════
+const CATEGORY_KEYWORDS = {
+  'Elektronik':['fernseher','tv','laptop','notebook','computer','pc','handy','smartphone','iphone','tablet','ipad','kamera','drucker','router','lautsprecher','kopfhörer','konsole','playstation','xbox','nintendo','monitor','bildschirm','waschmaschine','trockner','kühlschrank','gefrierschrank','geschirrspüler','mikrowelle','staubsauger','herd','backofen','dunstabzug'],
+  'Möbel':['sofa','couch','tisch','stuhl','schrank','regal','bett','matratze','kommode','sessel','schreibtisch','vitrine','garderobe','spiegel','lampe','kleiderschrank'],
+  'Küche & Haushalt':['topf','pfanne','geschirr','besteck','teller','tasse','glas','messer','mixer','toaster','wasserkocher','kaffeemaschine'],
+  'Kleidung & Schmuck':['hose','jacke','mantel','schuhe','stiefel','kleid','anzug','uhr','ring','kette','ohrring','armband','schmuck','handtasche'],
+  'Werkzeug & Hobby':['bohrmaschine','säge','werkzeug','akkuschrauber','hammer','schraubendreher','leiter','rasenmäher','gartengeräte','angel','sattel','trense','zaumzeug','reitausrüstung','ski','snowboard'],
+  'Fahrräder':['fahrrad','e-bike','ebike','mountainbike','rennrad','fahrradanhänger'],
+  'Kunstgegenstände':['gemälde','skulptur','kunstwerk','antiquität','vase','teppich']
+};
+function guessCategory(name){
+  const n=name.toLowerCase();
+  for(const cat in CATEGORY_KEYWORDS){
+    if(CATEGORY_KEYWORDS[cat].some(kw=>n.includes(kw)))return cat;
+  }
+  return null;
+}
 
 function calcZw(neuwert,cat,year){
   if(!neuwert||!year)return null;
@@ -706,7 +751,14 @@ function showMain(){
   $('view-auth').classList.add('hidden');$('view-main').classList.remove('hidden');
   $('more-email').textContent=currentUser?currentUser.email:'—';
   updateNetStatus();
+  if(!localStorage.getItem('hri_onboarding_seen'))$('modal-onboarding').classList.add('open');
 }
+function openOnboarding(){$('modal-onboarding').classList.add('open');}
+$('onboarding-close-btn').onclick=()=>{
+  $('modal-onboarding').classList.remove('open');
+  localStorage.setItem('hri_onboarding_seen','1');
+};
+$('reopen-onboarding-btn').onclick=openOnboarding;
 function unsubAll(){
   if(unsubItems)unsubItems();if(unsubKunden)unsubKunden();if(unsubCats)unsubCats();
   items=[];kunden={};cats=[...DEFAULT_CATS];
@@ -849,6 +901,13 @@ const STEP_TITLES=['Titelbild','Bezeichnung','Wert','Details'];
 const TOTAL_STEPS=STEP_TITLES.length;
 let currentStep=1;
 let wizardMode=true;
+let catManuallySet=false;
+$('f-cat').addEventListener('change',()=>{catManuallySet=true;});
+$('f-name').addEventListener('input',()=>{
+  if(catManuallySet)return;
+  const guess=guessCategory(fv('f-name'));
+  if(guess&&cats.includes(guess)&&$('f-cat').value!==guess){$('f-cat').value=guess;updateZeitwertDisplay();}
+});
 function goToStep(n){
   if(wizardMode){
     currentStep=Math.max(1,Math.min(TOTAL_STEPS,n));
@@ -935,6 +994,7 @@ $('inp-extra').addEventListener('change',async e=>{
 function resetItemForm(){
   ['f-name','f-year','f-neuwert','f-serial','f-note'].forEach(id=>$(id).value='');
   $('zeitwert-block').innerHTML='';
+  catManuallySet=false;
   $('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();
   $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   $('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();
@@ -952,7 +1012,7 @@ function openAddItem(){
 }
 function openEditItem(id){
   const item=items.find(i=>i.id===id);if(!item)return;
-  editId=id;wizardMode=false;resetItemForm();fillCatSelect(item.category);
+  editId=id;wizardMode=false;resetItemForm();fillCatSelect(item.category);catManuallySet=true;
   $('item-modal-title').textContent='Bearbeiten';
   $('f-name').value=item.name||'';
   $('f-year').value=item.year||'';
