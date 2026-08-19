@@ -835,31 +835,40 @@ $('price-search-btn').onclick=()=>{
 // ══════ Spracheingabe (Diktieren) — nutzt die browsereigene Web Speech API, kostenlos ══════
 // Unterstützt in Chrome/Edge/Android; in Safari/iOS (noch) nicht verfügbar — Button wird dort ausgeblendet.
 const SpeechRecognitionCtor=window.SpeechRecognition||window.webkitSpeechRecognition;
+const MIC_ERROR_MSG={
+  'not-allowed':'Mikrofon-Zugriff wurde nicht erlaubt — in den Browser-Einstellungen für diese Seite freigeben.',
+  'service-not-allowed':'Mikrofon-Zugriff wurde nicht erlaubt — in den Browser-Einstellungen für diese Seite freigeben.',
+  'no-speech':'Nichts verstanden — bitte erneut versuchen.',
+  'audio-capture':'Kein Mikrofon gefunden — bitte Eingabegerät in den Systemeinstellungen prüfen.',
+  'network':'Spracherkennung ohne Verbindung nicht möglich — Internet/Firewall prüfen.'
+};
 function setupMicButton(btnId,fieldId){
   const btn=$(btnId);
   if(!SpeechRecognitionCtor){btn.style.display='none';return;}
-  let recognition=null,listening=false;
+  let recognition=null,listening=false,baseText='';
   btn.onclick=()=>{
     if(listening){recognition&&recognition.stop();return;}
+    const field=$(fieldId);
+    baseText=field.value.trim();
     recognition=new SpeechRecognitionCtor();
     recognition.lang='de-DE';
-    recognition.interimResults=false;
+    recognition.interimResults=true;
+    recognition.continuous=false;
     recognition.maxAlternatives=1;
-    recognition.onstart=()=>{listening=true;btn.classList.add('listening');};
+    recognition.onstart=()=>{listening=true;btn.classList.add('listening');toast('🎤 Ich höre zu…');};
     recognition.onend=()=>{listening=false;btn.classList.remove('listening');};
     recognition.onerror=(e)=>{
       listening=false;btn.classList.remove('listening');
-      if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Mikrofon-Zugriff wurde nicht erlaubt.');
-      else if(e.error==='no-speech')toast('Nichts verstanden — bitte erneut versuchen.');
-      else toast('Spracherkennung fehlgeschlagen.');
+      if(e.error==='aborted')return;
+      toast(MIC_ERROR_MSG[e.error]||('Spracherkennung fehlgeschlagen ('+e.error+').'));
     };
     recognition.onresult=(e)=>{
-      const text=e.results[0][0].transcript;
-      const field=$(fieldId);
-      field.value=field.value.trim()?field.value.trim()+' '+text:text;
+      let text='';
+      for(let i=0;i<e.results.length;i++)text+=e.results[i][0].transcript;
+      field.value=baseText?baseText+' '+text:text;
       if(fieldId==='f-name')updateZeitwertDisplay();
     };
-    recognition.start();
+    try{recognition.start();}catch(err){console.error(err);toast('Spracherkennung konnte nicht gestartet werden.');}
   };
 }
 setupMicButton('mic-f-name','f-name');
