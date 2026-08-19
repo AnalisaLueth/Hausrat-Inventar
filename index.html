@@ -151,6 +151,12 @@ input[type=file]{display:none}
 .cat-item-name{flex:1;font-size:13.5px}
 .cat-item-del{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:2px 6px}
 .cat-add-row{display:flex;gap:8px}
+/* ── Kontakte (Makler/Gesellschaft) ── */
+.contact-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:12px;margin-bottom:10px}
+.contact-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.contact-radio{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
+.contact-radio input{accent-color:var(--accent);width:16px;height:16px}
+.contact-radio:has(input:checked){color:var(--accent)}
 /* ── More tab / account ── */
 .more-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-m);padding:14px;margin-bottom:12px}
 .more-card .label{font-size:11px;color:var(--text-2);margin-bottom:3px}
@@ -249,16 +255,18 @@ input[type=file]{display:none}
       </div>
 
       <div class="section-divider">Versicherung</div>
-      <div class="form-grid">
-        <div class="form-row">
-          <label class="form-label">Versicherungsgesellschaft</label>
-          <input class="form-input" type="text" id="k-gesellschaft" placeholder="z. B. Allianz">
-        </div>
-        <div class="form-row">
-          <label class="form-label">Ansprechpartner</label>
-          <input class="form-input" type="text" id="k-ansprechpartner" placeholder="Vor- und Nachname">
-        </div>
+      <div class="form-row">
+        <label class="form-label">Versicherungsgesellschaft</label>
+        <input class="form-input" type="text" id="k-gesellschaft" placeholder="z. B. Allianz">
       </div>
+
+      <div class="section-head" style="margin-top:14px">
+        <h2>Kontakte</h2>
+      </div>
+      <div class="modal-sub" style="margin-bottom:10px">Versicherung direkt oder über einen Makler abgeschlossen? Beliebig viele Kontakte anlegen und einen als Hauptansprechpartner markieren.</div>
+      <div id="contact-list"></div>
+      <button class="btn btn-block" id="contact-add-btn" type="button" style="margin-bottom:16px">＋ Kontakt hinzufügen</button>
+
       <div class="form-grid">
         <div class="form-row">
           <label class="form-label">Versicherungsnummer</label>
@@ -665,14 +673,67 @@ $('cat-add-btn').onclick=()=>{
 };
 
 // ══════ Kundendaten ══════
-const K_FIELDS=['name','adresse','telefon','email','gesellschaft','ansprechpartner',
+const K_FIELDS=['name','adresse','telefon','email','gesellschaft',
   'vsnr','vertragsnr','beginn','ende','zahlweise','beitrag','vssumme','sb','zusatz','notizen'];
 function fillKundenForm(){
   K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)el.value=kunden[f]||'';});
+  renderContactList(kunden.contacts||[]);
 }
+
+// ── Kontakte (z. B. Makler oder Sachbearbeiter bei der Gesellschaft) ──
+function contactCardHtml(c){
+  const id=c.id||('c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+  return `<div class="contact-card" data-id="${id}">
+    <div class="contact-card-head">
+      <label class="contact-radio">
+        <input type="radio" name="main-contact" value="${id}"${c.isMain?' checked':''}>
+        <span>Hauptansprechpartner</span>
+      </label>
+      <button type="button" class="icon-btn contact-del" title="Entfernen">✕</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Rolle</label>
+      <input class="form-input contact-role" type="text" placeholder="z. B. Versicherungsmakler, Sachbearbeiter" value="${esc(c.role||'')}">
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Name</label><input class="form-input contact-name" type="text" placeholder="Vor- und Nachname" value="${esc(c.name||'')}"></div>
+      <div class="form-row"><label class="form-label">Firma</label><input class="form-input contact-firma" type="text" placeholder="z. B. Maklerbüro Muster" value="${esc(c.firma||'')}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Telefon</label><input class="form-input contact-telefon" type="tel" placeholder="+49 ..." value="${esc(c.telefon||'')}"></div>
+      <div class="form-row"><label class="form-label">E-Mail</label><input class="form-input contact-email" type="email" placeholder="name@beispiel.de" value="${esc(c.email||'')}"></div>
+    </div>
+  </div>`;
+}
+function addContactCard(data){
+  const wrap=document.createElement('div');
+  wrap.innerHTML=contactCardHtml(data||{});
+  const card=wrap.firstElementChild;
+  card.querySelector('.contact-del').onclick=()=>card.remove();
+  $('contact-list').appendChild(card);
+}
+function renderContactList(list){
+  $('contact-list').innerHTML='';
+  (list||[]).forEach(c=>addContactCard(c));
+}
+$('contact-add-btn').onclick=()=>addContactCard({});
+function readContacts(){
+  const mainId=document.querySelector('input[name="main-contact"]:checked')?.value||null;
+  return [...document.querySelectorAll('.contact-card')].map(card=>({
+    id:card.dataset.id,
+    role:card.querySelector('.contact-role').value.trim(),
+    name:card.querySelector('.contact-name').value.trim(),
+    firma:card.querySelector('.contact-firma').value.trim(),
+    telefon:card.querySelector('.contact-telefon').value.trim(),
+    email:card.querySelector('.contact-email').value.trim(),
+    isMain:card.dataset.id===mainId
+  })).filter(c=>c.role||c.name||c.firma||c.telefon||c.email);
+}
+
 $('k-save-btn').onclick=async()=>{
   if(!currentUser)return;
   const data={};K_FIELDS.forEach(f=>{const el=$('k-'+f);if(el)data[f]=el.value.trim();});
+  data.contacts=readContacts();
   await setDoc(doc(db,'customerInfo',currentUser.uid),data);
   toast('Kundendaten gespeichert ✓');
 };
@@ -868,10 +929,17 @@ $('export-btn').onclick=()=>{
   const date=new Date().toLocaleDateString('de-DE');
   const wb=XLSX.utils.book_new();
   const k=kunden;
+  const contactRows=(k.contacts&&k.contacts.length)
+    ?k.contacts.flatMap(c=>[
+        [c.isMain?'★ Hauptansprechpartner':'Kontakt',[c.role,c.name].filter(Boolean).join(' – ')||'—'],
+        ['Firma:',c.firma||''],['Telefon:',c.telefon||''],['E-Mail:',c.email||''],[]
+      ])
+    :[['Kontakte:','(keine hinterlegt)'],[]];
   const kRows=[
     ['Hausrat-Inventar — Kundendaten',''],['Stand:',date],[],
     ['Name:',k.name||''],['Adresse:',k.adresse||''],['Telefon:',k.telefon||''],['E-Mail:',k.email||''],[],
-    ['Versicherungsgesellschaft:',k.gesellschaft||''],['Ansprechpartner:',k.ansprechpartner||''],
+    ['Versicherungsgesellschaft:',k.gesellschaft||''],[],
+    ...contactRows,
     ['Versicherungsnummer:',k.vsnr||''],['Vertragsnummer:',k.vertragsnr||''],
     ['Vertragsbeginn:',k.beginn||''],['Vertragsende/Laufzeit:',k.ende||''],[],
     ['Zahlweise:',k.zahlweise||''],['Beitrag (€):',k.beitrag?parseFloat(k.beitrag):''],
