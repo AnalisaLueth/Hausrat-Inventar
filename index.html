@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="Hausrat">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -171,6 +173,14 @@ input[type=file]{display:none}
 .image-viewer-inner img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
 .image-viewer-close{position:absolute;top:16px;right:16px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10}
 .image-viewer-close:active{background:rgba(255,255,255,.3)}
+/* ── Bild-Bearbeitung (Zuschneiden/Drehen) ── */
+.modal-bg.editor{align-items:stretch;justify-content:stretch;background:#0b0c0d}
+.crop-modal-inner{width:100%;height:100%;display:flex;flex-direction:column}
+.crop-canvas-wrap{flex:1;min-height:0;position:relative;overflow:hidden}
+.crop-canvas-wrap img{display:block;max-width:100%}
+.crop-toolbar{display:flex;gap:8px;align-items:center;padding:14px 16px calc(14px + var(--safe-b))}
+.crop-toolbar .btn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}
+.crop-toolbar .btn-primary{background:var(--accent);border-color:var(--accent)}
 /* ── Category manager ── */
 .cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .cat-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-s)}
@@ -490,6 +500,19 @@ input[type=file]{display:none}
   <div class="image-viewer-inner">
     <button class="image-viewer-close" id="image-viewer-close" type="button">✕</button>
     <img id="image-viewer-img" src="" alt="">
+  </div>
+</div>
+
+<!-- ══════ BILD-BEARBEITUNG (Zuschneiden/Drehen) ══════ -->
+<div class="modal-bg editor" id="modal-crop">
+  <div class="crop-modal-inner">
+    <div class="crop-canvas-wrap"><img id="crop-image" src="" alt=""></div>
+    <div class="crop-toolbar">
+      <button class="btn btn-sm" id="crop-rotate-btn" type="button">↻ Drehen</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="crop-cancel-btn" type="button">Abbrechen</button>
+      <button class="btn btn-primary" id="crop-apply-btn" type="button">✓ Übernehmen</button>
+    </div>
   </div>
 </div>
 
@@ -899,11 +922,13 @@ $('inp-extra').addEventListener('change',async e=>{
   if(files.length>remaining)toast(`Nur noch ${remaining} weitere${remaining===1?'s':''} Bild${remaining===1?'':'er'} möglich (max. ${MAX_EXTRA_PHOTOS}).`);
   const toProcess=files.slice(0,remaining);
   if(!toProcess.length)return;
-  extraPhotosProcessing=toProcess.length;renderExtraPhotos();
   for(const f of toProcess){
-    try{pendingExtraPhotos.push(await compressToLimit(f,140000));}
+    const edited=await editImage(f);
+    if(!edited)continue;
+    extraPhotosProcessing=1;renderExtraPhotos();
+    try{pendingExtraPhotos.push(await compressToLimit(edited,140000));}
     catch(err){console.error(err);toast('Ein Bild konnte nicht verarbeitet werden.');}
-    extraPhotosProcessing--;renderExtraPhotos();
+    extraPhotosProcessing=0;renderExtraPhotos();
   }
 });
 
@@ -971,15 +996,50 @@ function closeImageViewer(){
 $('image-viewer-close').onclick=closeImageViewer;
 $('modal-image-viewer').addEventListener('click',e=>{if(e.target.id==='modal-image-viewer')closeImageViewer();});
 
+// ── Bild-Bearbeitung (Zuschneiden/Drehen) — kostenlos, läuft komplett im Browser (Cropper.js) ──
+let cropResolver=null,cropperInstance=null;
+function editImage(file){
+  return new Promise(resolve=>{
+    cropResolver=resolve;
+    const url=URL.createObjectURL(file);
+    const img=$('crop-image');
+    img.onload=()=>{
+      if(cropperInstance)cropperInstance.destroy();
+      cropperInstance=new Cropper(img,{viewMode:1,autoCropArea:0.92,background:false,responsive:true});
+    };
+    img.src=url;
+    $('modal-crop').classList.add('open');
+  });
+}
+function closeCropModal(result){
+  $('modal-crop').classList.remove('open');
+  if(cropperInstance){cropperInstance.destroy();cropperInstance=null;}
+  const img=$('crop-image');
+  if(img.src)URL.revokeObjectURL(img.src);
+  img.src='';
+  const resolve=cropResolver;cropResolver=null;
+  if(resolve)resolve(result);
+}
+$('crop-cancel-btn').onclick=()=>closeCropModal(null);
+$('crop-rotate-btn').onclick=()=>{if(cropperInstance)cropperInstance.rotate(90);};
+$('crop-apply-btn').onclick=()=>{
+  if(!cropperInstance){closeCropModal(null);return;}
+  cropperInstance.getCroppedCanvas({maxWidth:2400,maxHeight:2400}).toBlob(blob=>{
+    closeCropModal(blob?new File([blob],'edited.jpg',{type:'image/jpeg'}):null);
+  },'image/jpeg',0.92);
+};
+
 $('cam-btn').onclick=()=>$('inp-cam').click();
 $('gal-btn').onclick=()=>$('inp-gal').click();
 
 async function onPhotoFile(e){
   const f=e.target.files[0];if(!f)return;
   e.target.value='';
+  const edited=await editImage(f);
+  if(!edited)return;
   $('photo-thumb-wrap').innerHTML=photoBoxSpinnerHtml();
   try{
-    pendingPhotoData=await compressToLimit(f,320000);
+    pendingPhotoData=await compressToLimit(edited,320000);
     $('photo-thumb-wrap').innerHTML=`<img src="${pendingPhotoData}" class="pic-box" id="photo-pick-btn">`;
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
   }catch(err){console.error(err);toast('Foto konnte nicht verarbeitet werden.');$('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();$('photo-pick-btn').onclick=()=>$('inp-cam').click();}
@@ -989,9 +1049,11 @@ $('inp-gal').addEventListener('change',onPhotoFile);
 $('inp-receipt').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
   e.target.value='';
+  const edited=await editImage(f);
+  if(!edited)return;
   $('receipt-chip-wrap').innerHTML=`<span class="receipt-chip">⏳ wird verarbeitet…</span>`;
   try{
-    pendingReceiptData=await compressToLimit(f,140000);
+    pendingReceiptData=await compressToLimit(edited,140000);
     $('receipt-chip-wrap').innerHTML=receiptChipDoneHtml();
     $('receipt-replace-btn').onclick=()=>$('inp-receipt').click();
   }catch(err){console.error(err);toast('Beleg konnte nicht verarbeitet werden.');$('receipt-chip-wrap').innerHTML=receiptChipEmptyHtml();$('receipt-pick-btn').onclick=()=>$('inp-receipt').click();}
