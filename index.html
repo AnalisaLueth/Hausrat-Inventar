@@ -447,6 +447,7 @@ input[type=file]{display:none}
         <button class="receipt-chip" id="receipt-pick-btn" type="button">🧾 Beleg-Foto anhängen (optional)</button>
       </div>
       <input type="file" id="inp-receipt" accept="image/*">
+      <button class="btn btn-block hidden" id="ai-recognize-btn" type="button" style="margin-top:12px">✨ Mit KI erkennen (Test — kostenpflichtig, ca. 2–5 Cent)</button>
     </div>
 
     <!-- Schritt 2: Bezeichnung + Kategorie -->
@@ -1034,6 +1035,7 @@ function resetItemForm(){
   pendingPhotoData=null;pendingReceiptData=null;
   pendingExtraPhotos=[];renderExtraPhotos();
   $('item-created-info').classList.add('hidden');
+  $('ai-recognize-btn').classList.add('hidden');
 }
 function openAddItem(){
   editId=null;wizardMode=true;resetItemForm();fillCatSelect();
@@ -1054,6 +1056,7 @@ function openEditItem(id){
   if(item.photo){
     $('photo-thumb-wrap').innerHTML=`<img src="${item.photo}" class="pic-box" id="photo-pick-btn">`;
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
+    $('ai-recognize-btn').classList.remove('hidden');
   }
   if(item.receipt){
     $('receipt-chip-wrap').innerHTML=`<button type="button" class="receipt-chip" id="receipt-view-btn">🧾 Beleg ansehen</button>
@@ -1139,6 +1142,7 @@ async function onPhotoFile(e){
     markItemDirty();
     $('photo-thumb-wrap').innerHTML=`<img src="${pendingPhotoData}" class="pic-box" id="photo-pick-btn">`;
     $('photo-pick-btn').onclick=()=>$('inp-cam').click();
+    $('ai-recognize-btn').classList.remove('hidden');
   }catch(err){console.error(err);toast('Foto konnte nicht verarbeitet werden.');$('photo-thumb-wrap').innerHTML=photoBoxEmptyHtml();$('photo-pick-btn').onclick=()=>$('inp-cam').click();}
 }
 $('inp-cam').addEventListener('change',onPhotoFile);
@@ -1163,6 +1167,35 @@ $('price-search-btn').onclick=()=>{
   const serial=fv('f-serial');
   const q=encodeURIComponent(name+(serial?' '+serial:''));
   window.open('https://www.google.com/search?tbm=shop&q='+q,'_blank','noopener');
+};
+
+// ── KI-Bilderkennung (Testfunktion, kostenpflichtig) — läuft über eine Vercel-Serverfunktion, Key bleibt serverseitig ──
+$('ai-recognize-btn').onclick=async()=>{
+  const photoSrc=pendingPhotoData||document.querySelector('#photo-thumb-wrap img')?.src;
+  if(!photoSrc||!photoSrc.startsWith('data:')){toast('Bitte zuerst ein Foto aufnehmen.');return;}
+  const btn=$('ai-recognize-btn');
+  const originalLabel=btn.textContent;
+  btn.disabled=true;btn.textContent='⏳ Erkenne…';
+  try{
+    const base64=photoSrc.split(',')[1];
+    const resp=await fetch('/api/recognize',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({imageBase64:base64,mediaType:'image/jpeg'})
+    });
+    const data=await resp.json();
+    if(data.error){toast('KI-Erkennung fehlgeschlagen: '+data.error);return;}
+    if(data.name){$('f-name').value=data.name;}
+    if(data.year)$('f-year').value=data.year;
+    if(data.serial)$('f-serial').value=data.serial;
+    if(data.price)$('f-neuwert').value=Math.round(data.price);
+    if(data.cat&&cats.includes(data.cat)){$('f-cat').value=data.cat;catManuallySet=true;}
+    const noteExtra=[data.note,data.source?('Quelle: '+data.source+(data.sourceUrl?' ('+data.sourceUrl+')':'')):''].filter(Boolean).join(' — ');
+    if(noteExtra)$('f-note').value=noteExtra;
+    itemFormDirty=true;
+    updateZeitwertDisplay();
+    toast('✨ KI-Erkennung übernommen — bitte prüfen!');
+  }catch(err){console.error(err);toast('KI-Erkennung fehlgeschlagen.');}
+  finally{btn.disabled=false;btn.textContent=originalLabel;}
 };
 
 // ══════ Spracheingabe (Diktieren) — nutzt die browsereigene Web Speech API, kostenlos ══════
