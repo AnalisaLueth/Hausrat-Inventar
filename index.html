@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>Hausrat-Inventar</title>
+<title>Inventura – Knipsen. Speichern. Entspannt versichert.</title>
 <meta name="theme-color" content="#C1502E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Hausrat">
+<meta name="apple-mobile-web-app-title" content="Inventura">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,8 +223,8 @@ input[type=file]{display:none}
 <div id="view-auth" class="hidden">
   <div class="auth-card">
     <div class="auth-logo">🏠</div>
-    <div class="auth-title">Hausrat-Inventar</div>
-    <div class="auth-sub">Digitalisiere deinen Hausrat für die Versicherung</div>
+    <div class="auth-title">Inventura</div>
+    <div class="auth-sub">Knipsen. Speichern. Entspannt versichert.<br>Dein ganzer Hausrat in einer App.</div>
     <div id="auth-setup-note" class="auth-note hidden">Firebase ist noch nicht verbunden. Bitte Konfiguration ergänzen.</div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="auth-tab-login" type="button">Anmelden</button>
@@ -249,7 +249,7 @@ input[type=file]{display:none}
 <!-- ══════ MAIN APP ══════ -->
 <div id="view-main" class="hidden">
   <div class="topbar">
-    <h1>🏠 Hausrat-Inventar</h1>
+    <h1>🏠 Inventura</h1>
     <div class="net-pill online" id="net-pill"><span class="net-dot"></span><span id="net-text">Online</span></div>
   </div>
 
@@ -1363,7 +1363,7 @@ $('export-btn').onclick=()=>{
       ])
     :[['Kontakte:','(keine hinterlegt)'],[]];
   const kRows=[
-    ['Hausrat-Inventar — Kundendaten',''],['Stand:',date],[],
+    ['Inventura — Kundendaten',''],['Stand:',date],[],
     ['Name:',k.name||''],['Adresse:',k.adresse||''],['Telefon:',k.telefon||''],['E-Mail:',k.email||''],[],
     ['Versicherungsgesellschaft:',k.gesellschaft||''],[],
     ...contactRows,
